@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+.next/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Interview prep (private)
+interview-prep.md
+
+# IDE
+.vscode/
+.idea/
