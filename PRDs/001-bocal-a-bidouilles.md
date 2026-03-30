@@ -100,12 +100,63 @@ The v1 app has no authentication -- it is a single-family app with trust-based a
 
 6. **Real-time Sync**: Supabase Realtime subscriptions on check_ins and daily_entries tables so all devices reflect current state immediately.
 
+### Accessibility
+
+- **Reduced motion**: All animations must respect `prefers-reduced-motion: reduce`. When enabled, replace motion with instant state changes (opacity crossfade or no transition). Gate hover animations behind `@media (hover: hover) and (pointer: fine)` to avoid false positives on touch devices.
+- **Touch targets**: All interactive elements (buttons, icons, avatars) must be at least 44x44px per Apple HIG and WCAG 2.5.5 guidelines. This is critical since the primary device is a shared tablet used by young children.
+- **Color contrast**: All text on colored backgrounds must meet WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text). The primary green (#158068) on white achieves 4.9:1.
+- **Modal dismissal**: All modals must have a visible close/X button. Tapping the overlay backdrop should also dismiss the modal.
+
+### Design Tokens
+
+Use CSS custom properties for all visual values to ensure consistency and enable future theming:
+
+**Colors (semantic)**
+- `--color-primary`: #158068 (main green -- buttons, active states, top bar)
+- `--color-primary-light`: #E8F5E9 (light green tints)
+- `--color-success`: #158068 (success states, check-in confirmation)
+- `--color-miss`: #9B8EC4 (muted purple for miss days -- not red)
+- `--color-miss-light`: #F3E5F5 (miss day background)
+- `--color-skip`: #B0BEC5 (skip day indicator)
+- `--color-background`: #FFF5F0 (warm cream page background)
+- `--color-surface`: #FFFFFF (cards, modals)
+- `--color-text-primary`: #333333
+- `--color-text-secondary`: #666666
+- `--color-text-on-primary`: #FFFFFF
+
+**Typography**
+- Minimum body text: 16px
+- Minimum labels/captions: 14px
+- Touch-screen primary actions: 18px+
+- Calendar numbers: 48-64px (hand-drawn display)
+- All text must be readable without zooming on a 10" tablet at arm's length
+
+**Spacing scale**: 4, 8, 12, 16, 20, 24, 32, 48, 64px
+
+**Border radius**: 8px (cards), 12px (buttons), 16px (modals), 50% (avatars)
+
+### Animation and Motion
+
+- **Preference hierarchy**: CSS transitions > WAAPI > CSS keyframes > JS (requestAnimationFrame)
+- **Interruptibility**: All animations must be interruptible. Use CSS transitions for rapidly-triggered elements, not keyframes.
+- **Asymmetric timing**: Enter animations can be slightly slower; exit animations should be fast (user expects instant response).
+- **Duration defaults**:
+  - Button press feedback: 100-160ms, `cubic-bezier(0.22, 1, 0.36, 1)`
+  - Modal/drawer enter: 200-350ms, `cubic-bezier(0.22, 1, 0.36, 1)`
+  - Modal exit: 150-200ms
+  - Slide/move: 200-300ms, `cubic-bezier(0.25, 1, 0.5, 1)`
+  - Marble drop: spring physics (custom, up to 600ms)
+  - Goal completion celebration: up to 1000ms, spring or custom
+- **Performance**: Only animate `transform` and `opacity` (skip layout and paint). Never animate `width`, `height`, `top`, `left`. Never use `transition: all`. Toggle `will-change` only during heavy motion.
+- **Stagger**: For multi-element reveals (calendar decorations, checklist items), stagger at 30-50ms per item, total under 300ms.
+
 ### Key Design Decisions
 - **No authentication (v1)**: Family app with trust-based access. Kids tap avatars, parents access admin via a gear/settings icon. Architecture supports adding auth later via Supabase Auth + RLS.
 - **Avatar system**: Illustrated avatar picker with 8-12 options (must include dog, cat, mix of real animals and whimsical creatures). Data model stores avatar as a field that can later hold either an avatar ID or image URL to support future photo upload.
 - **Time enforcement**: The app enforces deadline time in real-time. If a kid taps "I am Ready!" after the deadline, it counts as a miss. Parents can retroactively correct any entry. The clock component only appears on the dashboard for goals that have a deadline time configured.
 - **Responsive layout**: In landscape orientation, the calendar grid sits on the left and the jar visualization on the right (matching the daughter's paper mockup). In portrait orientation, only the jar is shown with the current marble count and target count displayed prominently. In both orientations, the current count and target are clearly visible.
-- **Calendar visual style**: Inspired by the daughter's hand-drawn paper mockup. Success days show a large hand-drawn-style number (sequential success count) with random decorations (hearts, stars, rainbows) in varying colors. Miss days show a muted colored X (not red). The calendar displays Mon-Fri across the top, weeks down the side.
+- **Calendar visual style**: Inspired by the daughter's hand-drawn paper mockup. Success days show a large hand-drawn-style number (sequential success count) with random decorations (hearts, stars, rainbows) in varying colors. Miss days show a muted colored X (not red). The calendar displays a full 7-day grid (Mon-Sun across the top, weeks down the side). Days that are not active for the current goal (e.g., weekends) are shown as greyed-out cells to maintain temporal context.
+- **Icon library**: Standardize on Lucide icons throughout the app. For rare cases where Lucide lacks a needed icon, create custom SVGs following Lucide conventions (24x24 viewBox, 2px stroke, round linecap/linejoin, no fill).
 - **Jar visual style**: 2D illustrated, storybook-like. Marbles are random colors from a cheerful palette. Matches the hand-drawn charm aesthetic.
 - **Team goal logic**: For team goals, all participating kids must check in before the deadline for the day to count as a success. The daily success celebration (marble + decorated number) only triggers when the last team member checks in.
 - **Daily entry lifecycle**: Each active day starts as "pending." It becomes "success" when all conditions are met, "miss" when the deadline passes without completion (or parent confirms), or "skip" when a parent marks it. Parents can change status at any time.
