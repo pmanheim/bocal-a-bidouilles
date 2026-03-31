@@ -3,20 +3,32 @@
 import { useState, useEffect } from "react";
 
 export default function LiveClock() {
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 10_000);
     return () => clearInterval(timer);
   }, []);
 
+  if (!now) {
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <svg width="240" height="240" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="56" fill="white" stroke="#158068" strokeWidth="2.5" />
+          <circle cx="60" cy="60" r="3" fill="#333" />
+        </svg>
+        <span className="text-2xl font-bold text-text-secondary">&nbsp;</span>
+      </div>
+    );
+  }
+
   const hours = now.getHours();
   const minutes = now.getMinutes();
-  const seconds = now.getSeconds();
 
   // Clock hand angles (degrees from 12 o'clock, clockwise)
-  const hourAngle = (hours % 12) * 30 + minutes * 0.5; // 0.5° per minute
-  const minuteAngle = minutes * 6 + seconds * 0.1; // 6° per minute
+  const hourAngle = (hours % 12) * 30 + minutes * 0.5;
+  const minuteAngle = minutes * 6;
 
   // Convert to SVG coordinates (center at 60,60)
   const hourRad = ((hourAngle - 90) * Math.PI) / 180;

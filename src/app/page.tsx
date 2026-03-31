@@ -146,12 +146,16 @@ function getAvatarIcon(avatar: string) {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: goalData } = await supabase
+  const { data: goalData, error: goalError } = await supabase
     .from("goals")
     .select("*")
     .eq("status", "active")
     .limit(1)
     .single();
+
+  if (goalError && goalError.code !== "PGRST116") {
+    console.error("Failed to load goal:", goalError.message);
+  }
 
   const goal = goalData as Goal | null;
 
@@ -159,21 +163,25 @@ export default async function DashboardPage() {
   let entries: DailyEntry[] = [];
 
   if (goal) {
-    const { data: participantData } = await supabase
-      .from("goal_participants")
-      .select("profile_id, profiles(id, name, avatar, color)")
-      .eq("goal_id", goal.id);
+    const [{ data: participantData, error: partError }, { data: entryData, error: entryError }] =
+      await Promise.all([
+        supabase
+          .from("goal_participants")
+          .select("profile_id, profiles(id, name, avatar, color)")
+          .eq("goal_id", goal.id),
+        supabase
+          .from("daily_entries")
+          .select("*")
+          .eq("goal_id", goal.id)
+          .order("date", { ascending: true }),
+      ]);
+
+    if (partError) console.error("Failed to load participants:", partError.message);
+    if (entryError) console.error("Failed to load entries:", entryError.message);
 
     participants = (participantData ?? []) as unknown as {
       profiles: ParticipantProfile;
     }[];
-
-    const { data: entryData } = await supabase
-      .from("daily_entries")
-      .select("*")
-      .eq("goal_id", goal.id)
-      .order("date", { ascending: true });
-
     entries = (entryData ?? []) as DailyEntry[];
   }
 
@@ -203,6 +211,7 @@ export default async function DashboardPage() {
   }
 
   const calendarCells = buildCalendarGrid(goal.start_date, entries);
+  const marblePositions = getMarblePositions(successCount);
 
   return (
     <main className="flex-1 flex flex-col min-h-screen">
@@ -281,8 +290,8 @@ export default async function DashboardPage() {
                   key={cell.dateStr}
                   className="aspect-square rounded-2xl relative flex items-center justify-center"
                   style={{
-                    backgroundColor: isSuccess
-                      ? palette!.bg
+                    backgroundColor: isSuccess && palette
+                      ? palette.bg
                       : isMiss
                       ? "#F3E5F5"
                       : cell.isToday
@@ -306,7 +315,7 @@ export default async function DashboardPage() {
                         className="font-extrabold leading-none"
                         style={{
                           fontSize: "clamp(52px, 8vw, 84px)",
-                          color: palette!.text,
+                          color: palette?.text ?? "#3D9B8F",
                         }}
                       >
                         {entry!.success_number}
@@ -356,33 +365,28 @@ export default async function DashboardPage() {
         <aside className="flex-[1] flex flex-col items-center gap-3">
           <LiveClock />
 
-          {/* Jar with marbles — old curvy shape, fills available space */}
-          {(() => {
-            const marbles = getMarblePositions(successCount);
-            return (
-              <div className="flex-1 w-full flex items-center justify-center min-h-0">
-                <svg viewBox="0 0 160 180" className="h-full w-auto" preserveAspectRatio="xMidYMax meet">
-                  {/* Lid */}
-                  <rect x="44" y="14" width="72" height="14" rx="4" fill="#8B9DAA" />
-                  {/* Jar body — curvy neck shape */}
-                  <path
-                    d="M50 28 L46 48 Q40 65 38 85 L36 142 Q36 170 56 172 L104 172 Q124 170 124 142 L122 85 Q120 65 114 48 L110 28"
-                    fill="rgba(200,220,235,0.12)"
-                    stroke="#A8BCC8"
-                    strokeWidth="2.5"
-                    strokeLinejoin="round"
-                  />
-                  {/* Marbles */}
-                  {marbles.map((pos, i) => (
-                    <g key={i}>
-                      <circle cx={pos.cx} cy={pos.cy} r="9" fill={MARBLE_COLORS[i % MARBLE_COLORS.length]} />
-                      <circle cx={pos.cx - 3} cy={pos.cy - 3} r="2.5" fill="rgba(255,255,255,0.4)" />
-                    </g>
-                  ))}
-                </svg>
-              </div>
-            );
-          })()}
+          {/* Jar with marbles — curvy neck shape, fills available space */}
+          <div className="flex-1 w-full flex items-center justify-center min-h-0">
+            <svg viewBox="0 0 160 180" className="h-full w-auto" preserveAspectRatio="xMidYMax meet">
+              {/* Lid */}
+              <rect x="44" y="14" width="72" height="14" rx="4" fill="#8B9DAA" />
+              {/* Jar body */}
+              <path
+                d="M50 28 L46 48 Q40 65 38 85 L36 142 Q36 170 56 172 L104 172 Q124 170 124 142 L122 85 Q120 65 114 48 L110 28"
+                fill="rgba(200,220,235,0.12)"
+                stroke="#A8BCC8"
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+              />
+              {/* Marbles */}
+              {marblePositions.map((pos, i) => (
+                <g key={i}>
+                  <circle cx={pos.cx} cy={pos.cy} r="9" fill={MARBLE_COLORS[i % MARBLE_COLORS.length]} />
+                  <circle cx={pos.cx - 3} cy={pos.cy - 3} r="2.5" fill="rgba(255,255,255,0.4)" />
+                </g>
+              ))}
+            </svg>
+          </div>
 
           {/* Participants */}
           <div className="flex gap-8 mb-3">
