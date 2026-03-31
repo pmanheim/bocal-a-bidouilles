@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* ── Design Tokens ── */
+:root {
+  /* Colors — semantic */
+  --color-primary: #158068;
+  --color-primary-light: #E8F5E9;
+  --color-success: #158068;
+  --color-miss: #9B8EC4;
+  --color-miss-light: #F3E5F5;
+  --color-skip: #B0BEC5;
+  --color-background: #FFF5F0;
+  --color-surface: #FFFFFF;
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-on-primary: #FFFFFF;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border radius */
+  --radius-card: 8px;
+  --radius-button: 12px;
+  --radius-modal: 16px;
+  --radius-avatar: 50%;
+}
+
+/* ── Tailwind theme integration ── */
+@theme inline {
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-success: var(--color-success);
+  --color-miss: var(--color-miss);
+  --color-miss-light: var(--color-miss-light);
+  --color-skip: var(--color-skip);
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-on-primary: var(--color-text-on-primary);
+  --font-sans: var(--font-nunito);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-nunito), Arial, Helvetica, sans-serif;
+}
