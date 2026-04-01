@@ -1,25 +1,66 @@
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import GoalsContent from "./components/GoalsContent";
+import type { Database } from "@/types/database";
 
-export default function AdminPage() {
+type Goal = Database["public"]["Tables"]["goals"]["Row"];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+export default async function AdminGoalsPage() {
+  const supabase = await createClient();
+
+  // Fetch all non-archived goals with their participants
+  const { data: goals } = await supabase
+    .from("goals")
+    .select("*, goal_participants(profile_id, profiles(*))")
+    .in("status", ["active", "completed"])
+    .order("created_at", { ascending: false });
+
+  // Fetch child profiles for the participant picker
+  const { data: childProfiles } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "child")
+    .order("name");
+
+  // Count successes per goal
+  const goalIds = (goals || []).map((g) => g.id);
+  const { data: successCounts } = goalIds.length
+    ? await supabase
+        .from("daily_entries")
+        .select("goal_id")
+        .in("goal_id", goalIds)
+        .eq("status", "success")
+    : { data: [] };
+
+  const countMap = new Map<string, number>();
+  for (const entry of successCounts || []) {
+    countMap.set(entry.goal_id, (countMap.get(entry.goal_id) || 0) + 1);
+  }
+
+  // Shape data for the client component
+  const goalsWithMeta = (goals || []).map((g) => {
+    const participants = (
+      g.goal_participants as Array<{
+        profile_id: string;
+        profiles: Profile;
+      }>
+    ).map((gp) => gp.profiles);
+
+    // Strip the join data so we pass a clean Goal row
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { goal_participants: _join, ...goalRow } = g;
+
+    return {
+      ...(goalRow as Goal),
+      participants,
+      successCount: countMap.get(g.id) || 0,
+    };
+  });
+
   return (
-    <main className="flex-1 flex flex-col items-center justify-center p-8">
-      <div
-        className="bg-surface p-8 text-center max-w-md"
-        style={{ borderRadius: "var(--radius-card)" }}
-      >
-        <h1 className="text-2xl font-bold mb-2">Admin</h1>
-        <p className="text-text-secondary mb-6">
-          Goal management, child profiles, and entry corrections will be built
-          in upcoming phases.
-        </p>
-        <Link
-          href="/"
-          className="inline-block bg-primary text-text-on-primary px-6 py-3 font-semibold"
-          style={{ borderRadius: "var(--radius-button)" }}
-        >
-          ← Back to Dashboard
-        </Link>
-      </div>
-    </main>
+    <GoalsContent
+      goals={goalsWithMeta}
+      childProfiles={(childProfiles as Profile[]) || []}
+    />
   );
 }
