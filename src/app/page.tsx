@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/types/database";
+import type { Database, ParticipantProfile } from "@/types/database";
 import TopBar from "@/app/components/TopBar";
 import CalendarGrid from "@/app/components/CalendarGrid";
 import LiveClock from "@/app/components/LiveClock";
@@ -9,13 +9,6 @@ import ParticipantAvatars from "@/app/components/ParticipantAvatars";
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
-
-interface ParticipantProfile {
-  id: string;
-  name: string;
-  avatar: string;
-  color: string | null;
-}
 
 export default async function DashboardPage() {
   const supabase = await createClient();

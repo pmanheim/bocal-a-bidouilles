@@ -1,9 +1,4 @@
-interface ParticipantProfile {
-  id: string;
-  name: string;
-  avatar: string;
-  color: string | null;
-}
+import type { ParticipantProfile } from "@/types/database";
 
 function getAvatarIcon(avatar: string) {
   switch (avatar) {

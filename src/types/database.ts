@@ -195,3 +195,8 @@ export interface Database {
     CompositeTypes: Record<string, never>;
   };
 }
+
+export type ParticipantProfile = Pick<
+  Database["public"]["Tables"]["profiles"]["Row"],
+  "id" | "name" | "avatar" | "color"
+>;
