@@ -23,15 +23,20 @@ A visual, touch-friendly app that helps kids track daily goals (chores, routines
 
 ## Tech Stack
 
-TBD — to be decided during PRD phase.
+- **Framework**: Next.js 16 (App Router, Server Components)
+- **Database**: Supabase (PostgreSQL + Realtime)
+- **Styling**: Tailwind CSS 4 with CSS custom property design tokens
+- **Font**: Nunito (via next/font/google)
+- **Deployment**: Vercel
+- **Supabase client**: `@supabase/ssr` (server.ts for Server Components, client.ts for Client Components)
 
 ## Development Workflow
 
 - All work via feature branches and PRs (see global CLAUDE.md)
 - GitHub Issues as backlog
 - `.pen` files for UI mockups (Pencil MCP)
-- `interview-prep.md` (gitignored) for Phil's portfolio
+- Interview prep tracked in global `~/.claude/interview-prep.md`
 
 ## Project Status
 
-**Phase: Planning** — Defining requirements and UI via PRD and mockups.
+**Phase 2: Check-In Flow** — Read-only dashboard is complete (Phase 1). Building the core check-in interaction next.
