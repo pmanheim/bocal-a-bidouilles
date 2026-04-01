@@ -6,9 +6,13 @@ export default function LiveClock() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
+    // setTimeout avoids synchronous setState in effect body
+    const initial = setTimeout(() => setNow(new Date()), 0);
     const timer = setInterval(() => setNow(new Date()), 10_000);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(timer);
+    };
   }, []);
 
   if (!now) {
