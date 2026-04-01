@@ -28,28 +28,43 @@ export default async function DashboardPage() {
 
   let participants: { profiles: ParticipantProfile }[] = [];
   let entries: DailyEntry[] = [];
+  let checkedInProfileIds: string[] = [];
 
   if (goal) {
-    const [{ data: participantData, error: partError }, { data: entryData, error: entryError }] =
-      await Promise.all([
-        supabase
-          .from("goal_participants")
-          .select("profile_id, profiles(id, name, avatar, color)")
-          .eq("goal_id", goal.id),
-        supabase
-          .from("daily_entries")
-          .select("*")
-          .eq("goal_id", goal.id)
-          .order("date", { ascending: true }),
-      ]);
+    const today = new Date().toISOString().split("T")[0];
+
+    const [
+      { data: participantData, error: partError },
+      { data: entryData, error: entryError },
+      { data: checkInData, error: checkInError },
+    ] = await Promise.all([
+      supabase
+        .from("goal_participants")
+        .select("profile_id, profiles(id, name, avatar, color)")
+        .eq("goal_id", goal.id),
+      supabase
+        .from("daily_entries")
+        .select("*")
+        .eq("goal_id", goal.id)
+        .order("date", { ascending: true }),
+      supabase
+        .from("check_ins")
+        .select("profile_id")
+        .eq("goal_id", goal.id)
+        .eq("date", today),
+    ]);
 
     if (partError) console.error("Failed to load participants:", partError.message);
     if (entryError) console.error("Failed to load entries:", entryError.message);
+    if (checkInError) console.error("Failed to load check-ins:", checkInError.message);
 
     participants = (participantData ?? []) as unknown as {
       profiles: ParticipantProfile;
     }[];
     entries = (entryData ?? []) as DailyEntry[];
+    checkedInProfileIds = (checkInData ?? []).map(
+      (c: { profile_id: string }) => c.profile_id
+    );
   }
 
   const successCount = entries.filter((e) => e.status === "success").length;
@@ -93,7 +108,11 @@ export default async function DashboardPage() {
         <aside className="flex-[1] flex flex-col items-center gap-3">
           {goal.deadline_time && <LiveClock />}
           <MarbleJar successCount={successCount} />
-          <ParticipantAvatars participants={participants} />
+          <ParticipantAvatars
+            participants={participants}
+            goalId={goal.id}
+            initialCheckedInProfileIds={checkedInProfileIds}
+          />
         </aside>
       </div>
     </main>

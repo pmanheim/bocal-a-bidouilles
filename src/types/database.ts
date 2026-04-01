@@ -29,6 +29,7 @@ export interface Database {
           name?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -58,6 +59,15 @@ export interface Database {
           color?: string | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "profiles_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       goals: {
         Row: {
@@ -108,6 +118,15 @@ export interface Database {
           start_date?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "goals_family_id_fkey";
+            columns: ["family_id"];
+            isOneToOne: false;
+            referencedRelation: "families";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       goal_participants: {
         Row: {
@@ -128,6 +147,22 @@ export interface Database {
           profile_id?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "goal_participants_goal_id_fkey";
+            columns: ["goal_id"];
+            isOneToOne: false;
+            referencedRelation: "goals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "goal_participants_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       daily_entries: {
         Row: {
@@ -157,6 +192,15 @@ export interface Database {
           decoration_seed?: number | null;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "daily_entries_goal_id_fkey";
+            columns: ["goal_id"];
+            isOneToOne: false;
+            referencedRelation: "goals";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       check_ins: {
         Row: {
@@ -183,6 +227,22 @@ export interface Database {
           checked_in_at?: string;
           created_at?: string;
         };
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "check_ins_goal_id_fkey";
+            columns: ["goal_id"];
+            isOneToOne: false;
+            referencedRelation: "goals";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;
