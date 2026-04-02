@@ -121,6 +121,7 @@ export default async function DashboardPage() {
           <ParticipantAvatars
             participants={participants}
             goalId={goal.id}
+            checklistItems={goal.checklist_items}
             initialCheckedInProfileIds={checkedInProfileIds}
             isLate={isLate}
             isTeam={goal.is_team}
