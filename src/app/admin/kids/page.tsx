@@ -1,14 +1,23 @@
-import { Users } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import KidsContent from "@/app/admin/components/KidsContent";
+import type { Database } from "@/types/database";
 
-export default function AdminKidsPage() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <Users size={48} className="text-text-secondary mb-4" />
-      <h2 className="text-xl font-bold mb-2">Kids</h2>
-      <p className="text-text-secondary max-w-sm">
-        Child profile management is coming soon. You&apos;ll be able to add kids,
-        change avatars, and manage profiles here.
-      </p>
-    </div>
-  );
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+export default async function AdminKidsPage() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "child")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Failed to load kids:", error.message);
+  }
+
+  const kids = (data ?? []) as Profile[];
+
+  return <KidsContent kids={kids} />;
 }

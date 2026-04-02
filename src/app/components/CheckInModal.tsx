@@ -6,18 +6,28 @@ import { recordCheckIn } from "@/app/actions/checkIn";
 import { getAvatarIcon } from "@/lib/avatarUtils";
 import { getRandomLateMessage } from "@/lib/lateMessages";
 import { playCheckInSound } from "@/lib/sounds";
+import type { Json } from "@/types/database";
 
-const CHECKLIST_ITEMS = [
-  { label: "Teeth", emoji: "\u{1FAA5}", bg: "#E8F5E9" },
-  { label: "Clothes", emoji: "\u{1F455}", bg: "#FFF3E0" },
-  { label: "Potty", emoji: "\u{1F6BD}", bg: "#E8F5E9" },
-  { label: "Breakfast", emoji: "\u{1F374}", bg: "#FCE4EC" },
-  { label: "Shoes", emoji: "\u{1F45F}", bg: "#FCE4EC" },
-];
+// Alternating soft background colors for checklist items
+const CHECKLIST_BG_COLORS = ["#E8F5E9", "#FFF3E0", "#FCE4EC", "#E3F2FD", "#F3E5F5"];
+
+type ChecklistItem = { emoji: string; label: string };
+
+/** Parse checklist_items from DB (handles string[], {icon,label}[], and {emoji,label}[]) */
+function parseChecklistItems(raw: Json): ChecklistItem[] {
+  if (!raw || !Array.isArray(raw)) return [];
+  return (raw as (string | Record<string, string>)[]).map((item) => {
+    if (typeof item === "string") return { emoji: "⭐", label: item };
+    if ("emoji" in item) return { emoji: item.emoji, label: item.label };
+    if ("icon" in item) return { emoji: "⭐", label: item.label || "" };
+    return { emoji: "⭐", label: "" };
+  });
+}
 
 interface CheckInModalProps {
   profile: ParticipantProfile;
   goalId: string;
+  checklistItems: Json;
   participants: { profiles: ParticipantProfile }[];
   checkedInProfileIds: string[];
   isLate: boolean;
@@ -31,6 +41,7 @@ interface CheckInModalProps {
 export default function CheckInModal({
   profile,
   goalId,
+  checklistItems: rawChecklistItems,
   participants,
   checkedInProfileIds,
   isLate,
@@ -42,6 +53,7 @@ export default function CheckInModal({
 }: CheckInModalProps) {
   const [isPending, startTransition] = useTransition();
   const alreadyCheckedIn = checkedInProfileIds.includes(profile.id);
+  const [checklistItems] = useState(() => parseChecklistItems(rawChecklistItems));
 
   // Pick a random late message once when the modal mounts
   const [lateMessage] = useState(() =>
@@ -139,20 +151,22 @@ export default function CheckInModal({
           <>
             <p className="text-gray-500 text-center mb-4">Have you done everything?</p>
 
-            {/* Checklist — view-only icons */}
-            <div className="flex justify-center gap-3 mb-6">
-              {CHECKLIST_ITEMS.map((item) => (
-                <div key={item.label} className="flex flex-col items-center gap-1">
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
-                    style={{ backgroundColor: item.bg }}
-                  >
-                    {item.emoji}
+            {/* Checklist — view-only icons from goal config */}
+            {checklistItems.length > 0 && (
+              <div className="flex justify-center gap-3 mb-6 flex-wrap">
+                {checklistItems.map((item, i) => (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div
+                      className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
+                      style={{ backgroundColor: CHECKLIST_BG_COLORS[i % CHECKLIST_BG_COLORS.length] }}
+                    >
+                      {item.emoji}
+                    </div>
+                    <span className="text-xs text-gray-500 font-semibold">{item.label}</span>
                   </div>
-                  <span className="text-xs text-gray-500 font-semibold">{item.label}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Team status bar */}
             <div className="flex flex-col gap-2 mb-6">

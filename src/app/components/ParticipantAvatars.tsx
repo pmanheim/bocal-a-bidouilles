@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { ParticipantProfile } from "@/types/database";
+import type { ParticipantProfile, Json } from "@/types/database";
 import CheckInModal from "./CheckInModal";
 import CelebrationModal from "./CelebrationModal";
 import { getAvatarIcon } from "@/lib/avatarUtils";
@@ -9,6 +9,7 @@ import { getAvatarIcon } from "@/lib/avatarUtils";
 interface ParticipantAvatarsProps {
   participants: { profiles: ParticipantProfile }[];
   goalId: string;
+  checklistItems: Json;
   initialCheckedInProfileIds: string[];
   isLate: boolean;
   isTeam: boolean;
@@ -20,6 +21,7 @@ interface ParticipantAvatarsProps {
 export default function ParticipantAvatars({
   participants,
   goalId,
+  checklistItems,
   initialCheckedInProfileIds,
   isLate,
   isTeam,
@@ -99,6 +101,7 @@ export default function ParticipantAvatars({
         <CheckInModal
           profile={openProfile}
           goalId={goalId}
+          checklistItems={checklistItems}
           participants={participants}
           checkedInProfileIds={checkedInProfileIds}
           isLate={isLate}

@@ -2,48 +2,29 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
-import * as LucideIcons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import type { Database } from "@/types/database";
-
-const lucideIconMap = LucideIcons as unknown as Record<string, LucideIcon>;
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-// Curated icon set for checklist items (kid-friendly activities)
-const CHECKLIST_ICONS = [
-  "Brush",
-  "Shirt",
-  "Utensils",
-  "Footprints",
-  "Bath",
-  "BookOpen",
-  "Backpack",
-  "Bed",
-  "Moon",
-  "Sun",
-  "Music",
-  "Apple",
-  "Heart",
-  "Star",
-  "Smile",
-  "HandHeart",
-  "Dog",
-  "Cat",
-  "Baby",
-  "Bike",
-  "TreePine",
-  "Flower2",
-  "Pencil",
-  "Palette",
-  "Dumbbell",
-  "GlassWater",
-] as const;
+// Curated emoji set for checklist items (kid-friendly activities)
+const CHECKLIST_EMOJIS = [
+  "🪥", "👕", "🍴", "👟", "🚽", "🧼", "📚", "🎒",
+  "🛏️", "🌙", "☀️", "🎵", "🍎", "❤️", "⭐", "😊",
+  "🐕", "🐈", "🚲", "🌲", "✏️", "🎨", "💪", "🥤",
+  "🧹", "💊", "👓", "⏰", "🔑", "✅", "🥪", "🥛",
+];
+
+// Common prize/reward emojis for the emoji picker
+const PRIZE_EMOJIS = [
+  "🍨", "🍦", "🎂", "🍕", "🍩", "🧁", "🍿", "🎬",
+  "🎮", "🎯", "🎪", "🎢", "🏊", "⚽", "🎁", "🧸",
+  "🦄", "🌈", "⭐", "🏆", "👑", "🎉", "🎈", "💎",
+];
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-type ChecklistItem = { icon: string; label: string };
+type ChecklistItem = { emoji: string; label: string };
 
 interface GoalFormProps {
   goal?: Goal & { participants?: string[] };
@@ -64,9 +45,20 @@ export default function GoalForm({
 
   const [name, setName] = useState(goal?.name || "");
   const [description, setDescription] = useState(goal?.description || "");
-  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(
-    (goal?.checklist_items as ChecklistItem[]) || []
-  );
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => {
+    const raw = goal?.checklist_items;
+    if (!raw || !Array.isArray(raw)) return [];
+    // Handle all legacy formats:
+    // - string[] from seed data → { emoji: "⭐", label: string }
+    // - { icon, label } from old Lucide form → { emoji: "⭐", label }
+    // - { emoji, label } from new form → use as-is
+    return (raw as (string | Record<string, string>)[]).map((item) => {
+      if (typeof item === "string") return { emoji: "⭐", label: item };
+      if ("emoji" in item) return { emoji: item.emoji, label: item.label };
+      if ("icon" in item) return { emoji: "⭐", label: item.label || "" };
+      return { emoji: "⭐", label: "" };
+    });
+  });
   const [targetCount, setTargetCount] = useState(
     mode === "restart" ? 20 : goal?.target_count || 20
   );
@@ -106,8 +98,8 @@ export default function GoalForm({
     return groups;
   }, []);
 
-  // Icon picker state
-  const [iconPickerIndex, setIconPickerIndex] = useState<number | null>(null);
+  // Emoji picker state for checklist items
+  const [emojiPickerIndex, setEmojiPickerIndex] = useState<number | null>(null);
 
   function toggleDay(day: number) {
     setActiveDays((prev) =>
@@ -122,14 +114,14 @@ export default function GoalForm({
   }
 
   function addChecklistItem() {
-    setChecklistItems((prev) => [...prev, { icon: "Star", label: "" }]);
+    setChecklistItems((prev) => [...prev, { emoji: "⭐", label: "" }]);
   }
 
   function removeChecklistItem(index: number) {
     setChecklistItems((prev) => prev.filter((_, i) => i !== index));
-    if (iconPickerIndex === null) return;
-    if (iconPickerIndex === index) setIconPickerIndex(null);
-    else if (iconPickerIndex > index) setIconPickerIndex(iconPickerIndex - 1);
+    if (emojiPickerIndex === null) return;
+    if (emojiPickerIndex === index) setEmojiPickerIndex(null);
+    else if (emojiPickerIndex > index) setEmojiPickerIndex(emojiPickerIndex - 1);
   }
 
   function updateChecklistItem(
@@ -227,74 +219,65 @@ export default function GoalForm({
         {mode !== "restart" && (
           <FieldGroup label="Checklist Items">
             <div className="flex flex-col gap-2">
-              {checklistItems.map((item, i) => {
-                const IconComponent =
-                  lucideIconMap[
-                    item.icon
-                  ] || LucideIcons.Star;
-                return (
-                  <div key={i} className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setIconPickerIndex(iconPickerIndex === i ? null : i)
-                      }
-                      className="shrink-0 w-10 h-10 flex items-center justify-center border border-gray-200"
-                      style={{ borderRadius: "var(--radius-card)" }}
-                    >
-                      <IconComponent size={20} />
-                    </button>
-                    <input
-                      type="text"
-                      value={item.label}
-                      onChange={(e) =>
-                        updateChecklistItem(i, "label", e.target.value)
-                      }
-                      placeholder="e.g., Brush teeth"
-                      className="flex-1 border border-gray-200 px-3 py-2 text-sm"
-                      style={{ borderRadius: "var(--radius-card)" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeChecklistItem(i)}
-                      className="shrink-0 p-2 text-text-secondary"
-                      style={{ minHeight: 44, minWidth: 44 }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                );
-              })}
+              {checklistItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEmojiPickerIndex(emojiPickerIndex === i ? null : i)
+                    }
+                    className="shrink-0 w-10 h-10 flex items-center justify-center border border-gray-200 text-xl"
+                    style={{ borderRadius: "var(--radius-card)" }}
+                  >
+                    {item.emoji}
+                  </button>
+                  <input
+                    type="text"
+                    value={item.label}
+                    onChange={(e) =>
+                      updateChecklistItem(i, "label", e.target.value)
+                    }
+                    placeholder="e.g., Brush teeth"
+                    className="flex-1 border border-gray-200 px-3 py-2 text-sm"
+                    style={{ borderRadius: "var(--radius-card)" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeChecklistItem(i)}
+                    className="shrink-0 p-2 text-text-secondary"
+                    style={{ minHeight: 44, minWidth: 44 }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
 
-              {/* Inline icon picker */}
-              {iconPickerIndex !== null && (
+              {/* Inline emoji picker for checklist items */}
+              {emojiPickerIndex !== null && (
                 <div
                   className="grid grid-cols-8 gap-1 p-2 border border-gray-200 bg-gray-50"
                   style={{ borderRadius: "var(--radius-card)" }}
                 >
-                  {CHECKLIST_ICONS.map((iconName) => {
-                    const Ic = lucideIconMap[iconName];
-                    if (!Ic) return null;
+                  {CHECKLIST_EMOJIS.map((emoji) => {
                     const selected =
-                      checklistItems[iconPickerIndex]?.icon === iconName;
+                      checklistItems[emojiPickerIndex]?.emoji === emoji;
                     return (
                       <button
-                        key={iconName}
+                        key={emoji}
                         type="button"
                         onClick={() => {
-                          updateChecklistItem(iconPickerIndex, "icon", iconName);
-                          setIconPickerIndex(null);
+                          updateChecklistItem(emojiPickerIndex, "emoji", emoji);
+                          setEmojiPickerIndex(null);
                         }}
-                        className="w-8 h-8 flex items-center justify-center"
+                        className="w-9 h-9 flex items-center justify-center text-xl"
                         style={{
                           borderRadius: 4,
                           backgroundColor: selected
                             ? "var(--color-primary-light)"
                             : "transparent",
                         }}
-                        title={iconName}
                       >
-                        <Ic size={16} />
+                        {emoji}
                       </button>
                     );
                   })}
@@ -330,14 +313,10 @@ export default function GoalForm({
             />
           </FieldGroup>
           <FieldGroup label="Prize Emoji">
-            <input
-              type="text"
+            <EmojiPicker
               value={prizeEmoji}
-              onChange={(e) => setPrizeEmoji(e.target.value)}
-              placeholder="🍦"
-              maxLength={4}
-              className="w-full border border-gray-200 px-3 py-2 text-base"
-              style={{ borderRadius: "var(--radius-card)" }}
+              onChange={setPrizeEmoji}
+              options={PRIZE_EMOJIS}
             />
           </FieldGroup>
         </div>
@@ -521,6 +500,57 @@ export default function GoalForm({
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function EmojiPicker({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (emoji: string) => void;
+  options: string[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full border border-gray-200 px-3 py-2 text-base text-left flex items-center gap-2"
+        style={{ borderRadius: "var(--radius-card)", minHeight: 42 }}
+      >
+        {value ? (
+          <span className="text-xl">{value}</span>
+        ) : (
+          <span className="text-gray-400">Choose emoji...</span>
+        )}
+      </button>
+      {open && (
+        <div
+          className="absolute z-10 top-full left-0 mt-1 p-2 bg-white border border-gray-200 shadow-lg grid grid-cols-8 gap-1"
+          style={{ borderRadius: "var(--radius-card)", width: "max-content" }}
+        >
+          {options.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => {
+                onChange(emoji);
+                setOpen(false);
+              }}
+              className="w-9 h-9 flex items-center justify-center text-xl rounded-lg hover:bg-gray-100"
+              style={{
+                backgroundColor: value === emoji ? "var(--color-primary-light)" : undefined,
+              }}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

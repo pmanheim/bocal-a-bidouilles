@@ -19,7 +19,7 @@ insert into goals (id, family_id, name, description, checklist_items, target_cou
    'a1b2c3d4-0000-4000-8000-000000000001',
    'Ready for School!',
    'Be fully ready for school before 8:00 AM',
-   '["teeth", "clothes", "shoes", "breakfast", "bathroom"]',
+   '[{"emoji":"🪥","label":"Teeth"},{"emoji":"👕","label":"Clothes"},{"emoji":"👟","label":"Shoes"},{"emoji":"🍴","label":"Breakfast"},{"emoji":"🚽","label":"Bathroom"}]',
    20,
    'Ice Cream Sundae Party',
    '🍨',
