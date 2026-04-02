@@ -59,7 +59,7 @@ export default function ParticipantAvatars({
 
   return (
     <>
-      <div className="flex gap-8 mb-3">
+      <div className="flex gap-6 md:gap-8 mb-3">
         {participants.map((p) => {
           const profile = p.profiles;
           if (!profile) return null;
@@ -73,7 +73,7 @@ export default function ParticipantAvatars({
             >
               <div className="relative">
                 <div
-                  className="w-28 h-28 rounded-full flex items-center justify-center text-6xl"
+                  className="w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl md:text-6xl"
                   style={{
                     backgroundColor: profile.color ?? "#ccc",
                   }}

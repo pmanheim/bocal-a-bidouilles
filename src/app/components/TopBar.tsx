@@ -17,16 +17,16 @@ export default function TopBar({
   targetCount,
 }: TopBarProps) {
   return (
-    <header className="bg-primary text-white px-5 py-3 flex items-center gap-4">
-      <h1 className="text-lg font-extrabold tracking-wide mr-2">
+    <header className="bg-primary text-white px-3 md:px-5 py-3 flex items-center gap-2 md:gap-4">
+      <h1 className="text-sm md:text-lg font-extrabold tracking-wide mr-1 md:mr-2">
         {goalName}
       </h1>
       {prizeEmoji && (
-        <span className="bg-white/20 backdrop-blur px-4 py-1.5 text-sm font-bold rounded-full flex items-center gap-1.5">
+        <span className="hidden md:flex bg-white/20 backdrop-blur px-4 py-1.5 text-sm font-bold rounded-full items-center gap-1.5">
           {prizeEmoji} {prizeText}
         </span>
       )}
-      <span className="bg-white/25 px-4 py-1.5 text-base font-extrabold rounded-full ml-auto">
+      <span className="bg-white/25 px-3 md:px-4 py-1.5 text-sm md:text-base font-extrabold rounded-full ml-auto">
         {successCount} / {targetCount}
       </span>
       <MuteButton />

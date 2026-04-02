@@ -6,6 +6,7 @@ import CalendarGrid from "@/app/components/CalendarGrid";
 import LiveClock from "@/app/components/LiveClock";
 import MarbleJar from "@/app/components/MarbleJar";
 import ParticipantAvatars from "@/app/components/ParticipantAvatars";
+import DashboardContent from "@/app/components/DashboardContent";
 import { ensureDailyEntries } from "@/app/actions/checkIn";
 import { getDateInTimezone, isAfterDeadline } from "@/lib/deadlineUtils";
 
@@ -112,25 +113,28 @@ export default async function DashboardPage() {
         targetCount={goal.target_count}
       />
 
-      <div className="flex-1 flex gap-6 p-5" style={{ backgroundColor: "#FAE5D8" }}>
-        <CalendarGrid startDate={goal.start_date} entries={entries} timezone={goal.timezone} />
-
-        <aside className="flex-[1] flex flex-col items-center gap-3">
-          {goal.deadline_time && <LiveClock />}
-          <MarbleJar successCount={successCount} />
-          <ParticipantAvatars
-            participants={participants}
-            goalId={goal.id}
-            checklistItems={goal.checklist_items}
-            initialCheckedInProfileIds={checkedInProfileIds}
-            isLate={isLate}
-            isTeam={goal.is_team}
-            isTimed={!!goal.deadline_time}
-            successCount={successCount}
-            targetCount={goal.target_count}
-          />
-        </aside>
-      </div>
+      <DashboardContent
+        calendar={
+          <CalendarGrid startDate={goal.start_date} entries={entries} timezone={goal.timezone} />
+        }
+        sidebar={
+          <>
+            {goal.deadline_time && <LiveClock />}
+            <MarbleJar successCount={successCount} />
+            <ParticipantAvatars
+              participants={participants}
+              goalId={goal.id}
+              checklistItems={goal.checklist_items}
+              initialCheckedInProfileIds={checkedInProfileIds}
+              isLate={isLate}
+              isTeam={goal.is_team}
+              isTimed={!!goal.deadline_time}
+              successCount={successCount}
+              targetCount={goal.target_count}
+            />
+          </>
+        }
+      />
     </main>
   );
 }

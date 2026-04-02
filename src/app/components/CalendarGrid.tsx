@@ -105,7 +105,7 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
   const cells = buildCalendarGrid(startDate, entries, timezone);
 
   return (
-    <section className="flex-[2] min-w-0 bg-white rounded-2xl p-5">
+    <section className="min-w-0 bg-white rounded-2xl p-3 md:p-5 h-full">
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-3 mb-2 px-1">
         {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => (
