@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import type { ParticipantProfile } from "@/types/database";
 import CheckInModal from "./CheckInModal";
+import CelebrationModal from "./CelebrationModal";
 import { getAvatarIcon } from "@/lib/avatarUtils";
 
 interface ParticipantAvatarsProps {
@@ -12,6 +13,8 @@ interface ParticipantAvatarsProps {
   isLate: boolean;
   isTeam: boolean;
   isTimed: boolean;
+  successCount: number;
+  targetCount: number;
 }
 
 export default function ParticipantAvatars({
@@ -21,11 +24,14 @@ export default function ParticipantAvatars({
   isLate,
   isTeam,
   isTimed,
+  successCount,
+  targetCount,
 }: ParticipantAvatarsProps) {
   const [openProfileId, setOpenProfileId] = useState<string | null>(null);
   const [checkedInProfileIds, setCheckedInProfileIds] = useState<string[]>(
     initialCheckedInProfileIds
   );
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const handleCheckInComplete = useCallback((profileId: string) => {
     setCheckedInProfileIds((prev) =>
@@ -35,6 +41,14 @@ export default function ParticipantAvatars({
 
   const handleCloseModal = useCallback(() => {
     setOpenProfileId(null);
+  }, []);
+
+  const handleCelebration = useCallback(() => {
+    setShowCelebration(true);
+  }, []);
+
+  const handleCloseCelebration = useCallback(() => {
+    setShowCelebration(false);
   }, []);
 
   const openProfile = participants.find(
@@ -52,7 +66,7 @@ export default function ParticipantAvatars({
             <button
               key={profile.id}
               onClick={() => setOpenProfileId(profile.id)}
-              className="flex flex-col items-center gap-2 cursor-pointer"
+              className="flex flex-col items-center gap-2 cursor-pointer press-feedback"
               style={{ minWidth: "44px", minHeight: "44px" }}
             >
               <div className="relative">
@@ -64,9 +78,9 @@ export default function ParticipantAvatars({
                 >
                   {getAvatarIcon(profile.avatar)}
                 </div>
-                {/* Checkmark overlay after check-in */}
+                {/* Checkmark overlay — pops in on check-in */}
                 {hasCheckedIn && (
-                  <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md">
+                  <div className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md animate-check-pop">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
@@ -92,6 +106,17 @@ export default function ParticipantAvatars({
           isTimed={isTimed}
           onClose={handleCloseModal}
           onCheckInComplete={handleCheckInComplete}
+          onCelebration={handleCelebration}
+        />
+      )}
+
+      {showCelebration && (
+        <CelebrationModal
+          participants={participants}
+          successCount={successCount + 1}
+          targetCount={targetCount}
+          isTeam={isTeam}
+          onClose={handleCloseCelebration}
         />
       )}
     </>

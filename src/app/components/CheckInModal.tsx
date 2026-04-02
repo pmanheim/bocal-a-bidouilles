@@ -5,6 +5,7 @@ import type { ParticipantProfile } from "@/types/database";
 import { recordCheckIn } from "@/app/actions/checkIn";
 import { getAvatarIcon } from "@/lib/avatarUtils";
 import { getRandomLateMessage } from "@/lib/lateMessages";
+import { playCheckInSound } from "@/lib/sounds";
 
 const CHECKLIST_ITEMS = [
   { label: "Teeth", emoji: "\u{1FAA5}", bg: "#E8F5E9" },
@@ -24,6 +25,7 @@ interface CheckInModalProps {
   isTimed: boolean;
   onClose: () => void;
   onCheckInComplete: (profileId: string) => void;
+  onCelebration: () => void;
 }
 
 export default function CheckInModal({
@@ -36,6 +38,7 @@ export default function CheckInModal({
   isTimed,
   onClose,
   onCheckInComplete,
+  onCelebration,
 }: CheckInModalProps) {
   const [isPending, startTransition] = useTransition();
   const alreadyCheckedIn = checkedInProfileIds.includes(profile.id);
@@ -59,22 +62,29 @@ export default function CheckInModal({
     startTransition(async () => {
       const result = await recordCheckIn(profile.id, goalId);
       if (result.success) {
+        playCheckInSound();
         onCheckInComplete(profile.id);
-        onClose();
+        if (result.dailyStatus === "success") {
+          // Close check-in modal, then show celebration
+          onClose();
+          onCelebration();
+        } else {
+          onClose();
+        }
       }
     });
-  }, [alreadyCheckedIn, isPending, profile.id, goalId, onCheckInComplete, onClose]);
+  }, [alreadyCheckedIn, isPending, profile.id, goalId, onCheckInComplete, onClose, onCelebration]);
 
   return (
     // Backdrop — semi-transparent, dismisses on tap
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-backdrop-in"
       style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
       onClick={onClose}
     >
       {/* Modal card */}
       <div
-        className="bg-white rounded-3xl p-8 w-full max-w-md relative"
+        className="bg-white rounded-3xl p-8 w-full max-w-md relative animate-modal-in"
         style={{ boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
         onClick={(e) => e.stopPropagation()}
       >

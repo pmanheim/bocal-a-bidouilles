@@ -39,4 +39,4 @@ A visual, touch-friendly app that helps kids track daily goals (chores, routines
 
 ## Project Status
 
-**Phase 2: Check-In Flow** — Read-only dashboard is complete (Phase 1). Building the core check-in interaction next.
+**Core loop complete** — Dashboard (Phase 1), check-in modal (Issue #13), time validation + team completion (Issue #14), and per-goal timezone support are all shipped. The app tracks daily check-ins, evaluates success/miss based on deadlines, and shows progress in the marble jar. Next features: celebrations, animations, admin history, profile management (see open GitHub Issues).

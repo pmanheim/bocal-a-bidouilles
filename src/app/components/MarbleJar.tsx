@@ -1,3 +1,8 @@
+"use client";
+
+import { useRef, useEffect, useMemo } from "react";
+import { playMarbleDropSound } from "@/lib/sounds";
+
 /* ── Marble colors for jar ── */
 const MARBLE_COLORS = [
   "#FF6B6B", "#4ECDC4", "#FFE66D", "#A78BFA", "#FB923C",
@@ -37,7 +42,20 @@ interface MarbleJarProps {
 }
 
 export default function MarbleJar({ successCount }: MarbleJarProps) {
-  const marblePositions = getMarblePositions(successCount);
+  const prevCountRef = useRef<number | null>(null);
+  const marblePositions = useMemo(() => getMarblePositions(successCount), [successCount]);
+
+  // Detect new marbles inside the effect to avoid stale closure issues
+  const isNewMarble = prevCountRef.current !== null && successCount > prevCountRef.current;
+
+  useEffect(() => {
+    const wasNewMarble =
+      prevCountRef.current !== null && successCount > prevCountRef.current;
+    if (wasNewMarble) {
+      playMarbleDropSound();
+    }
+    prevCountRef.current = successCount;
+  }, [successCount]);
 
   return (
     <div className="flex-1 w-full flex items-center justify-center min-h-0">
@@ -53,12 +71,19 @@ export default function MarbleJar({ successCount }: MarbleJarProps) {
           strokeLinejoin="round"
         />
         {/* Marbles */}
-        {marblePositions.map((pos, i) => (
-          <g key={i}>
-            <circle cx={pos.cx} cy={pos.cy} r="9" fill={MARBLE_COLORS[i % MARBLE_COLORS.length]} />
-            <circle cx={pos.cx - 3} cy={pos.cy - 3} r="2.5" fill="rgba(255,255,255,0.4)" />
-          </g>
-        ))}
+        {marblePositions.map((pos, i) => {
+          const isLast = i === marblePositions.length - 1 && isNewMarble;
+          return (
+            <g
+              key={i}
+              className={isLast ? "animate-marble-drop" : undefined}
+              style={isLast ? { transformBox: "fill-box" as const, transformOrigin: "center" } : undefined}
+            >
+              <circle cx={pos.cx} cy={pos.cy} r="9" fill={MARBLE_COLORS[i % MARBLE_COLORS.length]} />
+              <circle cx={pos.cx - 3} cy={pos.cy - 3} r="2.5" fill="rgba(255,255,255,0.4)" />
+            </g>
+          );
+        })}
       </svg>
     </div>
   );

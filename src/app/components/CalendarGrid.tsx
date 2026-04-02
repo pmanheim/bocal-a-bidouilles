@@ -1,5 +1,6 @@
 import type { Database } from "@/types/database";
 import { getDateInTimezone } from "@/lib/deadlineUtils";
+import { HandDrawnNumber, HandDrawnX } from "./HandDrawnMark";
 
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
 
@@ -142,14 +143,14 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
                 backgroundColor: isSuccess && palette
                   ? palette.bg
                   : isMiss
-                  ? "#F3E5F5"
+                  ? "var(--color-miss-light)"
                   : cell.isToday
                   ? "white"
                   : cell.isWeekend
                   ? "transparent"
                   : "#F7F5F3",
                 border: cell.isToday
-                  ? "2.5px dashed #158068"
+                  ? "2.5px dashed var(--color-primary)"
                   : isSuccess || isMiss
                   ? "none"
                   : cell.isWeekend
@@ -159,16 +160,13 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
             >
               {isSuccess ? (
                 <>
-                  {/* Large success number */}
-                  <span
-                    className="font-extrabold leading-none"
-                    style={{
-                      fontSize: "clamp(52px, 8vw, 84px)",
-                      color: palette?.text ?? "#3D9B8F",
-                    }}
-                  >
-                    {entry!.success_number}
-                  </span>
+                  {/* Hand-drawn success number with draw-on animation */}
+                  <div className="w-3/4 h-3/4 flex items-center justify-center">
+                    <HandDrawnNumber
+                      value={entry!.success_number!}
+                      color={palette?.text ?? "#3D9B8F"}
+                    />
+                  </div>
                   {/* Decorations scattered freely with organic variation */}
                   {decos.map((d, i) => (
                     <span
@@ -187,11 +185,8 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
                   ))}
                 </>
               ) : isMiss ? (
-                /* Corner-to-corner cross-out */
-                <svg className="absolute inset-0 w-full h-full p-2" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <line x1="10" y1="10" x2="90" y2="90" stroke="#9B8EC4" strokeWidth="7" strokeLinecap="round" />
-                  <line x1="90" y1="10" x2="10" y2="90" stroke="#9B8EC4" strokeWidth="7" strokeLinecap="round" />
-                </svg>
+                /* Hand-drawn X with draw-on animation */
+                <HandDrawnX color="#9B8EC4" />
               ) : cell.isToday ? (
                 <span
                   className="font-bold text-sm tracking-wide"
