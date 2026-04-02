@@ -6,6 +6,8 @@ import CalendarGrid from "@/app/components/CalendarGrid";
 import LiveClock from "@/app/components/LiveClock";
 import MarbleJar from "@/app/components/MarbleJar";
 import ParticipantAvatars from "@/app/components/ParticipantAvatars";
+import { ensureDailyEntries } from "@/app/actions/checkIn";
+import { isAfterDeadline } from "@/lib/deadlineUtils";
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
@@ -29,9 +31,17 @@ export default async function DashboardPage() {
   let participants: { profiles: ParticipantProfile }[] = [];
   let entries: DailyEntry[] = [];
   let checkedInProfileIds: string[] = [];
+  let isLate = false;
 
   if (goal) {
-    const today = new Date().toISOString().split("T")[0];
+    // Ensure today's daily entry exists and transition past pending → miss
+    await ensureDailyEntries(goal.id);
+
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+
+    // Determine if we're past the deadline
+    isLate = isAfterDeadline(now, goal.deadline_time);
 
     const [
       { data: participantData, error: partError },
@@ -112,6 +122,9 @@ export default async function DashboardPage() {
             participants={participants}
             goalId={goal.id}
             initialCheckedInProfileIds={checkedInProfileIds}
+            isLate={isLate}
+            isTeam={goal.is_team}
+            isTimed={!!goal.deadline_time}
           />
         </aside>
       </div>
