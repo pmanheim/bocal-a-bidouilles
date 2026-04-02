@@ -9,12 +9,18 @@ interface ParticipantAvatarsProps {
   participants: { profiles: ParticipantProfile }[];
   goalId: string;
   initialCheckedInProfileIds: string[];
+  isLate: boolean;
+  isTeam: boolean;
+  isTimed: boolean;
 }
 
 export default function ParticipantAvatars({
   participants,
   goalId,
   initialCheckedInProfileIds,
+  isLate,
+  isTeam,
+  isTimed,
 }: ParticipantAvatarsProps) {
   const [openProfileId, setOpenProfileId] = useState<string | null>(null);
   const [checkedInProfileIds, setCheckedInProfileIds] = useState<string[]>(
@@ -81,6 +87,9 @@ export default function ParticipantAvatars({
           goalId={goalId}
           participants={participants}
           checkedInProfileIds={checkedInProfileIds}
+          isLate={isLate}
+          isTeam={isTeam}
+          isTimed={isTimed}
           onClose={handleCloseModal}
           onCheckInComplete={handleCheckInComplete}
         />
