@@ -84,6 +84,7 @@ export interface Database {
           is_team: boolean;
           status: GoalStatus;
           start_date: string;
+          timezone: string;
           created_at: string;
         };
         Insert: {
@@ -100,6 +101,7 @@ export interface Database {
           is_team?: boolean;
           status?: GoalStatus;
           start_date: string;
+          timezone?: string;
           created_at?: string;
         };
         Update: {
@@ -116,6 +118,7 @@ export interface Database {
           is_team?: boolean;
           status?: GoalStatus;
           start_date?: string;
+          timezone?: string;
           created_at?: string;
         };
         Relationships: [

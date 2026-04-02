@@ -7,7 +7,7 @@ import LiveClock from "@/app/components/LiveClock";
 import MarbleJar from "@/app/components/MarbleJar";
 import ParticipantAvatars from "@/app/components/ParticipantAvatars";
 import { ensureDailyEntries } from "@/app/actions/checkIn";
-import { isAfterDeadline } from "@/lib/deadlineUtils";
+import { getDateInTimezone, isAfterDeadline } from "@/lib/deadlineUtils";
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
@@ -38,10 +38,10 @@ export default async function DashboardPage() {
     await ensureDailyEntries(goal.id);
 
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const today = getDateInTimezone(now, goal.timezone);
 
     // Determine if we're past the deadline
-    isLate = isAfterDeadline(now, goal.deadline_time);
+    isLate = isAfterDeadline(now, goal.deadline_time, goal.timezone);
 
     const [
       { data: participantData, error: partError },
@@ -113,7 +113,7 @@ export default async function DashboardPage() {
       />
 
       <div className="flex-1 flex gap-6 p-5" style={{ backgroundColor: "#FAE5D8" }}>
-        <CalendarGrid startDate={goal.start_date} entries={entries} />
+        <CalendarGrid startDate={goal.start_date} entries={entries} timezone={goal.timezone} />
 
         <aside className="flex-[1] flex flex-col items-center gap-3">
           {goal.deadline_time && <LiveClock />}

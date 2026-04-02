@@ -34,6 +34,7 @@ export async function createGoal(formData: FormData) {
   );
   const isTeam = formData.get("is_team") === "true";
   const startDate = formData.get("start_date") as string;
+  const timezone = (formData.get("timezone") as string) || "America/Los_Angeles";
   const participants: string[] = JSON.parse(
     (formData.get("participants") as string) || "[]"
   );
@@ -52,6 +53,7 @@ export async function createGoal(formData: FormData) {
       active_days: activeDays,
       is_team: isTeam,
       start_date: startDate,
+      timezone,
       status: "active" as GoalStatus,
     })
     .select()
@@ -91,6 +93,7 @@ export async function updateGoal(goalId: string, formData: FormData) {
   );
   const isTeam = formData.get("is_team") === "true";
   const startDate = formData.get("start_date") as string;
+  const timezone = (formData.get("timezone") as string) || "America/Los_Angeles";
   const participants: string[] = JSON.parse(
     (formData.get("participants") as string) || "[]"
   );
@@ -108,6 +111,7 @@ export async function updateGoal(goalId: string, formData: FormData) {
       active_days: activeDays,
       is_team: isTeam,
       start_date: startDate,
+      timezone,
     })
     .eq("id", goalId);
 
@@ -180,6 +184,7 @@ export async function restartGoal(goalId: string, formData: FormData) {
       active_days: existing.active_days,
       is_team: existing.is_team,
       start_date: startDate,
+      timezone: existing.timezone,
       status: "active" as GoalStatus,
     })
     .select()

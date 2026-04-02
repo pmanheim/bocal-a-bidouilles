@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -81,14 +81,30 @@ export default function GoalForm({
     (goal?.active_days as number[]) || [1, 2, 3, 4, 5]
   );
   const [isTeam, setIsTeam] = useState(goal?.is_team ?? true);
-  const [startDate, setStartDate] = useState(
-    mode === "restart"
-      ? new Date().toISOString().slice(0, 10)
-      : goal?.start_date || new Date().toISOString().slice(0, 10)
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    const localToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return mode === "restart" ? localToday : goal?.start_date || localToday;
+  });
+  const [timezone, setTimezone] = useState(
+    goal?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
   );
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
     goal?.participants || childProfiles.map((c) => c.id)
   );
+
+  // All available IANA timezones, grouped by region
+  const timezoneGroups = useMemo(() => {
+    const zones = Intl.supportedValuesOf("timeZone");
+    const groups = new Map<string, string[]>();
+    for (const tz of zones) {
+      const slash = tz.indexOf("/");
+      const region = slash > 0 ? tz.slice(0, slash) : "Other";
+      if (!groups.has(region)) groups.set(region, []);
+      groups.get(region)!.push(tz);
+    }
+    return groups;
+  }, []);
 
   // Icon picker state
   const [iconPickerIndex, setIconPickerIndex] = useState<number | null>(null);
@@ -139,6 +155,7 @@ export default function GoalForm({
     fd.set("active_days", JSON.stringify(activeDays));
     fd.set("is_team", String(isTeam));
     fd.set("start_date", startDate);
+    fd.set("timezone", timezone);
     fd.set("participants", JSON.stringify(selectedParticipants));
 
     startTransition(async () => {
@@ -438,17 +455,37 @@ export default function GoalForm({
           </FieldGroup>
         )}
 
-        {/* Start date */}
-        <FieldGroup label="Start Date">
-          <input
-            type="date"
-            required
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full border border-gray-200 px-3 py-2 text-base"
-            style={{ borderRadius: "var(--radius-card)" }}
-          />
-        </FieldGroup>
+        {/* Start date + Timezone */}
+        <div className="grid grid-cols-2 gap-4">
+          <FieldGroup label="Start Date">
+            <input
+              type="date"
+              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full border border-gray-200 px-3 py-2 text-base"
+              style={{ borderRadius: "var(--radius-card)" }}
+            />
+          </FieldGroup>
+          <FieldGroup label="Timezone">
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="w-full border border-gray-200 px-3 py-2 text-base"
+              style={{ borderRadius: "var(--radius-card)" }}
+            >
+              {[...timezoneGroups.entries()].map(([region, zones]) => (
+                <optgroup key={region} label={region}>
+                  {zones.map((tz) => (
+                    <option key={tz} value={tz}>
+                      {tz.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </FieldGroup>
+        </div>
 
         {/* Submit / Cancel */}
         <div className="flex gap-3 pt-2">
