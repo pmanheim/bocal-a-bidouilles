@@ -2,7 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { isAfterDeadline } from "@/lib/deadlineUtils";
+import {
+  getDateInTimezone,
+  getDayOfWeekInTimezone,
+  isAfterDeadline,
+} from "@/lib/deadlineUtils";
 
 interface CheckInResult {
   success: boolean;
@@ -17,12 +21,11 @@ export async function recordCheckIn(
 ): Promise<CheckInResult> {
   const supabase = await createClient();
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
 
-  // Fetch goal to check deadline_time and is_team
+  // Fetch goal to check deadline_time, is_team, and timezone
   const { data: goal, error: goalError } = await supabase
     .from("goals")
-    .select("deadline_time, is_team")
+    .select("deadline_time, is_team, timezone")
     .eq("id", goalId)
     .single();
 
@@ -30,8 +33,11 @@ export async function recordCheckIn(
     return { success: false, error: "Failed to load goal" };
   }
 
+  const tz = goal.timezone;
+  const today = getDateInTimezone(now, tz);
+
   // Determine if this check-in is late
-  const isLate = isAfterDeadline(now, goal.deadline_time);
+  const isLate = isAfterDeadline(now, goal.deadline_time, tz);
 
   // Insert the check-in record — DB unique constraint prevents duplicates
   const { error: insertError } = await supabase.from("check_ins").insert({
@@ -60,7 +66,8 @@ export async function recordCheckIn(
     goalId,
     goal.is_team,
     goal.deadline_time,
-    today
+    today,
+    tz
   );
 
   revalidatePath("/");
@@ -76,7 +83,8 @@ async function evaluateTeamCompletion(
   goalId: string,
   isTeam: boolean,
   deadlineTime: string | null,
-  today: string
+  today: string,
+  timezone: string
 ): Promise<"success" | "pending"> {
   // Fetch participants and today's check-ins in parallel
   const [{ data: participants }, { data: checkIns }] = await Promise.all([
@@ -100,7 +108,7 @@ async function evaluateTeamCompletion(
     checkIns
       .filter((c) => {
         if (!deadlineTime) return true; // untimed = always on time
-        return !isAfterDeadline(new Date(c.checked_in_at), deadlineTime);
+        return !isAfterDeadline(new Date(c.checked_in_at), deadlineTime, timezone);
       })
       .map((c) => c.profile_id)
   );
@@ -158,18 +166,19 @@ async function markDayAsSuccess(
 export async function ensureDailyEntries(goalId: string) {
   const supabase = await createClient();
   const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
 
   // Fetch goal config
   const { data: goal } = await supabase
     .from("goals")
-    .select("active_days, deadline_time, start_date")
+    .select("active_days, deadline_time, start_date, timezone")
     .eq("id", goalId)
     .single();
 
   if (!goal) return;
 
+  const tz = goal.timezone;
+  const today = getDateInTimezone(now, tz);
+  const dayOfWeek = getDayOfWeekInTimezone(now, tz);
   const activeDays = (goal.active_days as number[]) ?? [];
 
   // Create today's entry if it's an active day and doesn't exist yet
@@ -204,7 +213,7 @@ export async function ensureDailyEntries(goalId: string) {
       const missedIds = pendingEntries
         .filter((entry) => {
           if (entry.date < today) return true;
-          return entry.date === today && isAfterDeadline(now, goal.deadline_time);
+          return entry.date === today && isAfterDeadline(now, goal.deadline_time, tz);
         })
         .map((entry) => entry.id);
 

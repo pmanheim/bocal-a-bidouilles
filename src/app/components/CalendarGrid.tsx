@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database";
+import { getDateInTimezone } from "@/lib/deadlineUtils";
 
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
 
@@ -45,13 +46,18 @@ function getDecorations(seed: number) {
 }
 
 /* ── Build calendar grid from start date through current week ── */
-function buildCalendarGrid(startDate: string, entries: DailyEntry[]) {
+function buildCalendarGrid(startDate: string, entries: DailyEntry[], timezone: string) {
   const entryMap = new Map<string, DailyEntry>();
   entries.forEach((e) => entryMap.set(e.date, e));
 
-  const start = new Date(startDate + "T00:00:00");
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Determine "today" in the goal's timezone — works correctly regardless
+  // of server timezone (UTC on Vercel, local on dev machines)
+  const todayStr = getDateInTimezone(new Date(), timezone);
+  const [ty, tm, td] = todayStr.split("-").map(Number);
+  const today = new Date(ty, tm - 1, td);
+
+  const [sy, sm, sd] = startDate.split("-").map(Number);
+  const start = new Date(sy, sm - 1, sd);
 
   // Find Monday of start week
   const startDow = start.getDay();
@@ -77,7 +83,7 @@ function buildCalendarGrid(startDate: string, entries: DailyEntry[]) {
       dateStr,
       dayOfWeek: current.getDay(),
       isWeekend: current.getDay() === 0 || current.getDay() === 6,
-      isToday: current.getTime() === today.getTime(),
+      isToday: dateStr === todayStr,
       entry: entryMap.get(dateStr) ?? null,
       dayNum: current.getDate(),
     });
@@ -91,10 +97,11 @@ function buildCalendarGrid(startDate: string, entries: DailyEntry[]) {
 interface CalendarGridProps {
   startDate: string;
   entries: DailyEntry[];
+  timezone: string;
 }
 
-export default function CalendarGrid({ startDate, entries }: CalendarGridProps) {
-  const cells = buildCalendarGrid(startDate, entries);
+export default function CalendarGrid({ startDate, entries, timezone }: CalendarGridProps) {
+  const cells = buildCalendarGrid(startDate, entries, timezone);
 
   return (
     <section className="flex-[2] min-w-0 bg-white rounded-2xl p-5">
