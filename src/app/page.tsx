@@ -125,6 +125,8 @@ export default async function DashboardPage() {
             isLate={isLate}
             isTeam={goal.is_team}
             isTimed={!!goal.deadline_time}
+            successCount={successCount}
+            targetCount={goal.target_count}
           />
         </aside>
       </div>
