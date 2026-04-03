@@ -120,7 +120,7 @@ export default async function DashboardPage() {
         sidebar={
           <>
             {goal.deadline_time && <LiveClock />}
-            <MarbleJar successCount={successCount} />
+            <MarbleJar successCount={successCount} targetCount={goal.target_count} />
             <ParticipantAvatars
               participants={participants}
               goalId={goal.id}
