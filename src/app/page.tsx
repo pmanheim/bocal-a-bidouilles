@@ -104,7 +104,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main className="flex-1 flex flex-col min-h-screen">
+    <main className="flex flex-col h-dvh md:min-h-screen md:h-auto overflow-hidden md:overflow-visible">
       <TopBar
         goalName={goal.name}
         prizeEmoji={goal.prize_emoji}

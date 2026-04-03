@@ -22,7 +22,7 @@ export default function DashboardContent({
 
   return (
     <div
-      className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-5"
+      className="flex-1 min-h-0 flex flex-col md:flex-row gap-3 md:gap-6 p-3 md:p-5"
       style={{ backgroundColor: "#FAE5D8" }}
     >
       {/* Tab switcher — narrow screens only */}
@@ -70,7 +70,7 @@ export default function DashboardContent({
 
       {/* Sidebar (jar + clock + avatars) — always visible on wide, toggled on narrow */}
       <aside
-        className={`flex-[1] flex flex-col items-center gap-3 ${
+        className={`flex-[1] min-h-0 flex flex-col items-center gap-2 md:gap-3 ${
           activeView === "jar" ? "flex" : "hidden"
         } md:flex`}
       >
