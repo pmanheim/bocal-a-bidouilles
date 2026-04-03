@@ -1,14 +1,46 @@
-import { PenSquare } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import EntriesContent from "@/app/admin/components/EntriesContent";
+import type { Database } from "@/types/database";
 
-export default function AdminEntriesPage() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <PenSquare size={48} className="text-text-secondary mb-4" />
-      <h2 className="text-xl font-bold mb-2">Edit Entries</h2>
-      <p className="text-text-secondary max-w-sm">
-        Retroactive entry corrections (changing misses to successes, skipping
-        days) will be available here. Coming soon.
-      </p>
-    </div>
-  );
+type Goal = Database["public"]["Tables"]["goals"]["Row"];
+type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
+
+export default async function AdminEntriesPage() {
+  const supabase = await createClient();
+
+  // Fetch all goals (active + completed) for the goal picker
+  const { data: goalData, error: goalError } = await supabase
+    .from("goals")
+    .select("*")
+    .in("status", ["active", "completed"])
+    .order("created_at", { ascending: false });
+
+  if (goalError) {
+    console.error("Failed to load goals:", goalError.message);
+  }
+
+  const goals = (goalData ?? []) as Goal[];
+
+  // Fetch entries for all goals in parallel
+  const entriesByGoal: Record<string, DailyEntry[]> = {};
+
+  if (goals.length > 0) {
+    const results = await Promise.all(
+      goals.map((g) =>
+        supabase
+          .from("daily_entries")
+          .select("*")
+          .eq("goal_id", g.id)
+          .order("date", { ascending: false })
+      )
+    );
+
+    for (let i = 0; i < goals.length; i++) {
+      const { data, error } = results[i];
+      if (error) console.error(`Failed to load entries for ${goals[i].name}:`, error.message);
+      entriesByGoal[goals[i].id] = (data ?? []) as DailyEntry[];
+    }
+  }
+
+  return <EntriesContent goals={goals} entriesByGoal={entriesByGoal} />;
 }
