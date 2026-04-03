@@ -10,12 +10,14 @@ const MARBLE_COLORS = [
 ];
 
 /* ── Jar inner width at a given y position (from SVG path shape) ── */
+/* Jar walls: bottom ~x=40-120, middle ~x=42-118, neck ~x=48-112.
+   Subtract 2*radius margin so marbles stay fully inside the walls. */
 function jarInnerWidth(y: number): number {
-  if (y >= 140) return 82;
-  if (y >= 110) return 80;
-  if (y >= 80) return 74;
-  if (y >= 60) return 64;
-  return 54;
+  if (y >= 150) return 68; // very bottom, walls at ~42-118
+  if (y >= 120) return 70; // lower body
+  if (y >= 90) return 66;  // middle
+  if (y >= 60) return 56;  // upper body, narrowing
+  return 46;               // near neck
 }
 
 /**

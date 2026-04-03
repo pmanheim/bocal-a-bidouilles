@@ -13,21 +13,43 @@ import { getDateInTimezone, isAfterDeadline } from "@/lib/deadlineUtils";
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ goal?: string }>;
+}) {
   const supabase = await createClient();
+  const params = await searchParams;
 
-  const { data: goalData, error: goalError } = await supabase
+  // Fetch all active goals for the goal selector
+  const { data: allGoals, error: goalsError } = await supabase
     .from("goals")
-    .select("*")
+    .select("id, name")
     .eq("status", "active")
-    .limit(1)
-    .single();
+    .order("created_at", { ascending: true });
 
-  if (goalError && goalError.code !== "PGRST116") {
-    console.error("Failed to load goal:", goalError.message);
+  if (goalsError) {
+    console.error("Failed to load goals:", goalsError.message);
   }
 
-  const goal = goalData as Goal | null;
+  const activeGoals = (allGoals ?? []) as { id: string; name: string }[];
+
+  // Select goal: from URL param, or first active goal
+  const selectedGoalId = params.goal && activeGoals.some((g) => g.id === params.goal)
+    ? params.goal
+    : activeGoals[0]?.id;
+
+  let goal: Goal | null = null;
+  if (selectedGoalId) {
+    const { data: goalData, error: goalError } = await supabase
+      .from("goals")
+      .select("*")
+      .eq("id", selectedGoalId)
+      .single();
+
+    if (goalError) console.error("Failed to load goal:", goalError.message);
+    goal = goalData as Goal | null;
+  }
 
   let participants: { profiles: ParticipantProfile }[] = [];
   let entries: DailyEntry[] = [];
@@ -111,6 +133,8 @@ export default async function DashboardPage() {
         prizeText={goal.prize_text}
         successCount={successCount}
         targetCount={goal.target_count}
+        activeGoals={activeGoals}
+        currentGoalId={goal.id}
       />
 
       <DashboardContent

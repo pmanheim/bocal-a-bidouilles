@@ -13,13 +13,19 @@ type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
 interface EntriesContentProps {
   goals: Goal[];
   entriesByGoal: Record<string, DailyEntry[]>;
+  initialGoalId?: string;
 }
 
 export default function EntriesContent({
   goals,
   entriesByGoal,
+  initialGoalId,
 }: EntriesContentProps) {
-  const [selectedGoalId, setSelectedGoalId] = useState(goals[0]?.id ?? "");
+  const [selectedGoalId, setSelectedGoalId] = useState(
+    initialGoalId && goals.some((g) => g.id === initialGoalId)
+      ? initialGoalId
+      : goals[0]?.id ?? ""
+  );
   const [isSkipping, startSkipTransition] = useTransition();
 
   const selectedGoal = goals.find((g) => g.id === selectedGoalId);
