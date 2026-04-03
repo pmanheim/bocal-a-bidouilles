@@ -12,7 +12,9 @@ import {
   SkipForward,
   FileEdit,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { Database, GoalStatus } from "@/types/database";
+import { skipDay } from "@/app/actions/entries";
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -40,6 +42,7 @@ export default function GoalCard({
   onArchive: () => void;
   onRestart: () => void;
 }) {
+  const router = useRouter();
   const activeDays = (goal.active_days as number[]) || [];
   const status = statusColors[goal.status] ?? statusColors.archived;
 
@@ -146,16 +149,17 @@ export default function GoalCard({
           <>
             <ActionButton onClick={onEdit} icon={Pencil} label="Edit" />
             <ActionButton
-              onClick={() => {}}
+              onClick={async () => {
+                const today = new Date().toLocaleDateString("en-CA", { timeZone: goal.timezone });
+                await skipDay(goal.id, today);
+              }}
               icon={SkipForward}
               label="Skip Today"
-              disabled
             />
             <ActionButton
-              onClick={() => {}}
+              onClick={() => router.push("/admin/entries")}
               icon={FileEdit}
               label="Correct Entry"
-              disabled
             />
             <ActionButton
               onClick={onArchive}
