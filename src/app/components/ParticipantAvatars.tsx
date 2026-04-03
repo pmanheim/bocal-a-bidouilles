@@ -116,7 +116,7 @@ export default function ParticipantAvatars({
       {showCelebration && (
         <CelebrationModal
           participants={participants}
-          successCount={successCount + 1}
+          successCount={successCount}
           targetCount={targetCount}
           isTeam={isTeam}
           onClose={handleCloseCelebration}

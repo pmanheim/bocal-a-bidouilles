@@ -100,10 +100,10 @@ export default function CheckInModal({
         style={{ boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button — 44x44px minimum touch target */}
+        {/* Close button — visible circle with X, 44x44px touch target */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors"
           aria-label="Close"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -187,7 +187,11 @@ export default function CheckInModal({
                     >
                       {getAvatarIcon(member.avatar)}
                     </div>
-                    {isCurrentKid ? (
+                    {isCurrentKid && alreadyCheckedIn ? (
+                      <span className="text-sm font-bold text-gray-700">
+                        {member.name}: checked in &#10003;
+                      </span>
+                    ) : isCurrentKid ? (
                       <span
                         className="text-sm font-bold px-3 py-1 rounded-full text-white"
                         style={{ backgroundColor: member.color ?? "#ccc" }}
