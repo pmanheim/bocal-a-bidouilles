@@ -17,12 +17,12 @@ export default function LiveClock() {
 
   if (!now) {
     return (
-      <div className="flex flex-col items-center gap-1">
-        <svg width="240" height="240" viewBox="0 0 120 120">
+      <div className="flex flex-col items-center gap-1 shrink-0">
+        <svg className="w-[100px] h-[100px] md:w-[240px] md:h-[240px]" viewBox="0 0 120 120">
           <circle cx="60" cy="60" r="56" fill="white" stroke="#158068" strokeWidth="2.5" />
           <circle cx="60" cy="60" r="3" fill="#333" />
         </svg>
-        <span className="text-2xl font-bold text-text-secondary">&nbsp;</span>
+        <span className="text-base md:text-2xl font-bold text-text-secondary">&nbsp;</span>
       </div>
     );
   }
@@ -49,8 +49,8 @@ export default function LiveClock() {
   const timeStr = `${displayHours}:${String(minutes).padStart(2, "0")} ${amPm}`;
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width="240" height="240" viewBox="0 0 120 120">
+    <div className="flex flex-col items-center gap-1 shrink-0">
+      <svg className="w-[100px] h-[100px] md:w-[240px] md:h-[240px]" viewBox="0 0 120 120">
         {/* White background */}
         <circle cx="60" cy="60" r="56" fill="white" stroke="#158068" strokeWidth="2.5" />
         {/* All 12 hour numbers */}
@@ -87,7 +87,7 @@ export default function LiveClock() {
           stroke="#333" strokeWidth="2" strokeLinecap="round"
         />
       </svg>
-      <span className="text-2xl font-bold text-text-secondary">{timeStr}</span>
+      <span className="text-base md:text-2xl font-bold text-text-secondary">{timeStr}</span>
     </div>
   );
 }
