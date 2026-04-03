@@ -167,10 +167,11 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
                       color={palette?.text ?? "#3D9B8F"}
                     />
                   </div>
-                  {/* Decorations scattered freely with organic variation */}
+                  {/* Decorations — hidden on mobile to reduce clutter */}
                   {decos.map((d, i) => (
                     <span
                       key={i}
+                      className="hidden md:inline"
                       style={{
                         position: "absolute",
                         top: `${d.top}%`,
