@@ -157,7 +157,7 @@ export default function GoalCard({
               label="Skip Today"
             />
             <ActionButton
-              onClick={() => router.push("/admin/entries")}
+              onClick={() => router.push(`/admin/entries?goal=${goal.id}`)}
               icon={FileEdit}
               label="Correct Entry"
             />

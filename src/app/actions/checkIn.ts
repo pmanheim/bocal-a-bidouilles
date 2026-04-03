@@ -181,20 +181,23 @@ export async function ensureDailyEntries(goalId: string) {
   const dayOfWeek = getDayOfWeekInTimezone(now, tz);
   const activeDays = (goal.active_days as number[]) ?? [];
 
-  // Create today's entry if it's an active day and doesn't exist yet
+  // Create today's entry if it's an active day and doesn't exist yet.
+  // If the deadline has already passed, create as "miss" directly
+  // (avoids creating "pending" only to immediately transition it).
   if (activeDays.includes(dayOfWeek) && today >= goal.start_date) {
     const { data: todayEntry } = await supabase
       .from("daily_entries")
-      .select("id")
+      .select("id, status")
       .eq("goal_id", goalId)
       .eq("date", today)
       .maybeSingle();
 
     if (!todayEntry) {
+      const pastDeadline = isAfterDeadline(now, goal.deadline_time, tz);
       await supabase.from("daily_entries").insert({
         goal_id: goalId,
         date: today,
-        status: "pending" as const,
+        status: (pastDeadline ? "miss" : "pending") as "miss" | "pending",
       });
     }
   }

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MuteButton from "./MuteButton";
+import GoalSelector from "./GoalSelector";
 
 interface TopBarProps {
   goalName: string;
@@ -7,6 +8,8 @@ interface TopBarProps {
   prizeText: string | null;
   successCount: number;
   targetCount: number;
+  activeGoals?: { id: string; name: string }[];
+  currentGoalId?: string;
 }
 
 export default function TopBar({
@@ -15,12 +18,20 @@ export default function TopBar({
   prizeText,
   successCount,
   targetCount,
+  activeGoals,
+  currentGoalId,
 }: TopBarProps) {
+  const hasMultipleGoals = activeGoals && activeGoals.length > 1 && currentGoalId;
+
   return (
     <header className="bg-primary text-white px-3 md:px-5 py-3 flex items-center gap-2 md:gap-4">
-      <h1 className="text-sm md:text-lg font-extrabold tracking-wide mr-1 md:mr-2">
-        {goalName}
-      </h1>
+      {hasMultipleGoals ? (
+        <GoalSelector goals={activeGoals} currentGoalId={currentGoalId} />
+      ) : (
+        <h1 className="text-sm md:text-lg font-extrabold tracking-wide mr-1 md:mr-2">
+          {goalName}
+        </h1>
+      )}
       {prizeEmoji && (
         <span className="hidden md:flex bg-white/20 backdrop-blur px-4 py-1.5 text-sm font-bold rounded-full items-center gap-1.5">
           {prizeEmoji} {prizeText}

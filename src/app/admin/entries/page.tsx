@@ -5,7 +5,12 @@ import type { Database } from "@/types/database";
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type DailyEntry = Database["public"]["Tables"]["daily_entries"]["Row"];
 
-export default async function AdminEntriesPage() {
+export default async function AdminEntriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ goal?: string }>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   // Fetch all goals (active + completed) for the goal picker
@@ -42,5 +47,5 @@ export default async function AdminEntriesPage() {
     }
   }
 
-  return <EntriesContent goals={goals} entriesByGoal={entriesByGoal} />;
+  return <EntriesContent goals={goals} entriesByGoal={entriesByGoal} initialGoalId={params.goal} />;
 }
