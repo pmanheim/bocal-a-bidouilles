@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Target, Users, History, PenSquare } from "lucide-react";
+import { Target, Users, History, PenSquare, BarChart3 } from "lucide-react";
 
 const tabs = [
   { href: "/admin", label: "Goals", icon: Target },
   { href: "/admin/kids", label: "Kids", icon: Users },
   { href: "/admin/history", label: "History", icon: History },
   { href: "/admin/entries", label: "Edit Entries", icon: PenSquare },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 export default function AdminSidebar() {
