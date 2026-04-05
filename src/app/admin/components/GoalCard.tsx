@@ -74,7 +74,7 @@ export default function GoalCard({
       </div>
 
       {/* Info grid */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
         {/* Progress */}
         <div className="flex items-center gap-2">
           <Trophy size={16} className="text-text-secondary shrink-0" />
@@ -111,7 +111,7 @@ export default function GoalCard({
         </div>
 
         {/* Active days */}
-        <div className="flex items-center gap-2 col-span-2">
+        <div className="flex items-center gap-2 sm:col-span-2">
           <Calendar size={16} className="text-text-secondary shrink-0" />
           <div className="flex gap-1">
             {DAY_LABELS.map((label, i) => (
@@ -136,7 +136,7 @@ export default function GoalCard({
 
         {/* Participants */}
         {participants.length > 0 && (
-          <div className="flex items-center gap-2 col-span-2">
+          <div className="flex items-center gap-2 sm:col-span-2">
             <Users size={16} className="text-text-secondary shrink-0" />
             <span>{participants.map((p) => p.name).join(", ")}</span>
           </div>
