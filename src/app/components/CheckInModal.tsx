@@ -6,23 +6,11 @@ import { recordCheckIn } from "@/app/actions/checkIn";
 import { getAvatarIcon } from "@/lib/avatarUtils";
 import { getRandomLateMessage } from "@/lib/lateMessages";
 import { playCheckInSound } from "@/lib/sounds";
+import { parseChecklistItems } from "@/lib/checklistUtils";
 import type { Json } from "@/types/database";
 
 // Alternating soft background colors for checklist items
 const CHECKLIST_BG_COLORS = ["#E8F5E9", "#FFF3E0", "#FCE4EC", "#E3F2FD", "#F3E5F5"];
-
-type ChecklistItem = { emoji: string; label: string };
-
-/** Parse checklist_items from DB (handles string[], {icon,label}[], and {emoji,label}[]) */
-function parseChecklistItems(raw: Json): ChecklistItem[] {
-  if (!raw || !Array.isArray(raw)) return [];
-  return (raw as (string | Record<string, string>)[]).map((item) => {
-    if (typeof item === "string") return { emoji: "⭐", label: item };
-    if ("emoji" in item) return { emoji: item.emoji, label: item.label };
-    if ("icon" in item) return { emoji: "⭐", label: item.label || "" };
-    return { emoji: "⭐", label: "" };
-  });
-}
 
 interface CheckInModalProps {
   profile: ParticipantProfile;
