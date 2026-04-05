@@ -3,6 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { X, Plus, Trash2 } from "lucide-react";
 import type { Database } from "@/types/database";
+import { parseChecklistItems } from "@/lib/checklistUtils";
+import type { ChecklistItem } from "@/lib/checklistUtils";
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -24,7 +26,6 @@ const PRIZE_EMOJIS = [
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-type ChecklistItem = { emoji: string; label: string };
 
 interface GoalFormProps {
   goal?: Goal & { participants?: string[] };
@@ -45,20 +46,9 @@ export default function GoalForm({
 
   const [name, setName] = useState(goal?.name || "");
   const [description, setDescription] = useState(goal?.description || "");
-  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(() => {
-    const raw = goal?.checklist_items;
-    if (!raw || !Array.isArray(raw)) return [];
-    // Handle all legacy formats:
-    // - string[] from seed data → { emoji: "⭐", label: string }
-    // - { icon, label } from old Lucide form → { emoji: "⭐", label }
-    // - { emoji, label } from new form → use as-is
-    return (raw as (string | Record<string, string>)[]).map((item) => {
-      if (typeof item === "string") return { emoji: "⭐", label: item };
-      if ("emoji" in item) return { emoji: item.emoji, label: item.label };
-      if ("icon" in item) return { emoji: "⭐", label: item.label || "" };
-      return { emoji: "⭐", label: "" };
-    });
-  });
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(
+    () => parseChecklistItems(goal?.checklist_items ?? null)
+  );
   const [targetCount, setTargetCount] = useState(
     mode === "restart" ? 20 : goal?.target_count || 20
   );
