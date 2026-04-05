@@ -175,6 +175,7 @@ export interface Database {
           status: EntryStatus;
           success_number: number | null;
           decoration_seed: number | null;
+          updated_by: string;
           created_at: string;
         };
         Insert: {
@@ -184,6 +185,7 @@ export interface Database {
           status?: EntryStatus;
           success_number?: number | null;
           decoration_seed?: number | null;
+          updated_by?: string;
           created_at?: string;
         };
         Update: {
@@ -193,6 +195,7 @@ export interface Database {
           status?: EntryStatus;
           success_number?: number | null;
           decoration_seed?: number | null;
+          updated_by?: string;
           created_at?: string;
         };
         Relationships: [
