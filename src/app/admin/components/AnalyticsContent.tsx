@@ -12,27 +12,22 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-/** Get ISO week number for a date string (YYYY-MM-DD) */
-function isoWeek(dateStr: string): number {
-  const d = new Date(dateStr + "T00:00:00Z");
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+/**
+ * Compute the week number of an entry date relative to the goal's start date.
+ * Week 1 = the first 7 days starting from the goal start, etc.
+ * This means W1 always represents "first week of the goal" regardless
+ * of when in the year the goal started.
+ */
+function relativeWeek(entryDate: string, goalStartDate: string): number {
+  const entry = new Date(entryDate + "T00:00:00Z");
+  const start = new Date(goalStartDate + "T00:00:00Z");
+  const diffDays = Math.floor((entry.getTime() - start.getTime()) / 86400000);
+  return Math.floor(diffDays / 7) + 1;
 }
 
-/** Get year-week key like "2026-W14" */
-function yearWeekKey(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const year = d.getUTCFullYear();
-  return `${year}-W${String(isoWeek(dateStr)).padStart(2, "0")}`;
-}
-
-/** Get display label for a week key like "W14" */
-function weekLabel(key: string): string {
-  return key.split("-")[1];
+/** Week key for grouping: "W1", "W2", etc. */
+function relativeWeekKey(entryDate: string, goalStartDate: string): string {
+  return `W${relativeWeek(entryDate, goalStartDate)}`;
 }
 
 /** Parse deadline time (HH:MM) to minutes since midnight */
@@ -169,7 +164,7 @@ function WeeklySuccessChart({ data }: { data: WeeklySuccessData }) {
               fontSize={10}
               fill="var(--color-text-secondary)"
             >
-              {weekLabel(d.week)}
+              {d.week}
             </text>
           </g>
         );
@@ -284,7 +279,7 @@ function CheckInTimingChart({
           fontSize={10}
           fill="var(--color-text-secondary)"
         >
-          {weekLabel(w)}
+          {w}
         </text>
       ))}
 
@@ -406,21 +401,33 @@ export default function AnalyticsContent({
     return Array.from(seen.values());
   }, [filteredGoals]);
 
-  /* ---- Weekly success rate ---- */
+  /* ---- Weekly success rate (relative to goal start) ---- */
+  const goalStartMap = useMemo(
+    () => new Map(goals.map((g) => [g.id, g.start_date])),
+    [goals]
+  );
+
   const weeklySuccess: WeeklySuccessData = useMemo(() => {
     const map = new Map<string, { successes: number; total: number }>();
     for (const e of filteredEntries) {
       if (e.status === "pending") continue;
-      const wk = yearWeekKey(e.date);
+      const startDate = goalStartMap.get(e.goal_id);
+      if (!startDate) continue;
+      const wk = relativeWeekKey(e.date, startDate);
       const cur = map.get(wk) || { successes: 0, total: 0 };
       cur.total += 1;
       if (e.status === "success") cur.successes += 1;
       map.set(wk, cur);
     }
     return Array.from(map.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => {
+        // Sort by week number numerically (W1, W2, ... W10)
+        const numA = parseInt(a.slice(1));
+        const numB = parseInt(b.slice(1));
+        return numA - numB;
+      })
       .map(([week, d]) => ({ week, ...d }));
-  }, [filteredEntries]);
+  }, [filteredEntries, goalStartMap]);
 
   /* ---- Check-in timing trend ---- */
   const { timingLines, timingWeeks } = useMemo(() => {
@@ -441,7 +448,9 @@ export default function AnalyticsContent({
       const ciMins = checkInMinutesInTimezone(ci.checked_in_at, goal.timezone);
       const minutesBefore = dlMins - ciMins;
 
-      const wk = yearWeekKey(ci.date);
+      const startDate = goalStartMap.get(ci.goal_id);
+      if (!startDate) continue;
+      const wk = relativeWeekKey(ci.date, startDate);
       if (!byProfile.has(ci.profile_id)) byProfile.set(ci.profile_id, new Map());
       const weekMap = byProfile.get(ci.profile_id)!;
       if (!weekMap.has(wk)) weekMap.set(wk, []);
@@ -465,9 +474,13 @@ export default function AnalyticsContent({
       lines.push({ profile, points });
     }
 
-    const timingWeeks = Array.from(allWeeksSet).sort();
+    const timingWeeks = Array.from(allWeeksSet).sort((a, b) => {
+      const numA = parseInt(a.slice(1));
+      const numB = parseInt(b.slice(1));
+      return numA - numB;
+    });
     return { timingLines: lines, timingWeeks };
-  }, [filteredCheckIns, goals, participants]);
+  }, [filteredCheckIns, goals, participants, goalStartMap]);
 
   // Determine if we have enough data
   const hasEnoughWeeks = weeklySuccess.length >= 2;
