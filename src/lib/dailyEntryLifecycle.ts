@@ -10,7 +10,6 @@ import type { TypedSupabaseClient } from "@/lib/supabase/server";
 import type { EntryStatus } from "@/types/database";
 import {
   getDateInTimezone,
-  getDayOfWeekInTimezone,
   isAfterDeadline,
 } from "@/lib/deadlineUtils";
 
@@ -53,8 +52,14 @@ export async function recalculateSuccessNumbers(
 // ── Page Load Bootstrapping ────────────────────────────────────────
 
 /**
- * Ensure today's daily entry exists and transition stale pending entries.
- * Called on dashboard page load. Respects admin edits via updated_by.
+ * Ensure every past active-weekday from start_date through today has a daily
+ * entry, and transition stale pending entries to "miss". Called on dashboard
+ * and admin page loads. Respects admin edits via updated_by — existing entries
+ * are never overwritten.
+ *
+ * Why back-fill the past: if the app isn't opened on a given day, we still want
+ * the calendar and Edit Entries screen to record it as a miss. Otherwise the
+ * day silently disappears from history.
  */
 export async function bootstrapDailyEntries(
   supabase: TypedSupabaseClient,
@@ -72,26 +77,51 @@ export async function bootstrapDailyEntries(
 
   const tz = goal.timezone;
   const today = getDateInTimezone(now, tz);
-  const dayOfWeek = getDayOfWeekInTimezone(now, tz);
   const activeDays = (goal.active_days as number[]) ?? [];
+  const pastDeadline = isAfterDeadline(now, goal.deadline_time, tz);
 
-  // Create today's entry if it's an active day and doesn't exist yet
-  if (activeDays.includes(dayOfWeek) && today >= goal.start_date) {
-    const { data: todayEntry } = await supabase
+  // Build the list of active-weekday dates from start_date through today
+  const expectedDates: string[] = [];
+  if (today >= goal.start_date) {
+    const [sy, sm, sd] = goal.start_date.split("-").map(Number);
+    const [ty, tm, td] = today.split("-").map(Number);
+    const cursor = new Date(sy, sm - 1, sd);
+    const end = new Date(ty, tm - 1, td);
+    while (cursor <= end) {
+      if (activeDays.includes(cursor.getDay())) {
+        const yyyy = cursor.getFullYear();
+        const mm = String(cursor.getMonth() + 1).padStart(2, "0");
+        const dd = String(cursor.getDate()).padStart(2, "0");
+        expectedDates.push(`${yyyy}-${mm}-${dd}`);
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  if (expectedDates.length > 0) {
+    const { data: existing } = await supabase
       .from("daily_entries")
-      .select("id")
+      .select("date")
       .eq("goal_id", goalId)
-      .eq("date", today)
-      .maybeSingle();
+      .in("date", expectedDates);
 
-    if (!todayEntry) {
-      const pastDeadline = isAfterDeadline(now, goal.deadline_time, tz);
-      await supabase.from("daily_entries").insert({
+    const existingDates = new Set(
+      (existing ?? []).map((e: { date: string }) => e.date)
+    );
+
+    const toInsert = expectedDates
+      .filter((date) => !existingDates.has(date))
+      .map((date) => ({
         goal_id: goalId,
-        date: today,
-        status: (pastDeadline ? "miss" : "pending") as "miss" | "pending",
+        date,
+        status: (date < today || pastDeadline ? "miss" : "pending") as
+          | "miss"
+          | "pending",
         updated_by: "system",
-      });
+      }));
+
+    if (toInsert.length > 0) {
+      await supabase.from("daily_entries").insert(toInsert);
     }
   }
 
@@ -109,7 +139,7 @@ export async function bootstrapDailyEntries(
       const missedIds = pendingEntries
         .filter((entry: { id: string; date: string }) => {
           if (entry.date < today) return true;
-          return entry.date === today && isAfterDeadline(now, goal.deadline_time, tz);
+          return entry.date === today && pastDeadline;
         })
         .map((entry: { id: string; date: string }) => entry.id);
 

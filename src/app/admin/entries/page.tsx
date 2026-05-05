@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import EntriesContent from "@/app/admin/components/EntriesContent";
+import { bootstrapDailyEntries } from "@/lib/dailyEntryLifecycle";
 import type { Database } from "@/types/database";
 
 type Goal = Database["public"]["Tables"]["goals"]["Row"];
@@ -25,6 +26,16 @@ export default async function AdminEntriesPage({
   }
 
   const goals = (goalData ?? []) as Goal[];
+
+  // Back-fill any missing past entries before reading them, so the admin
+  // sees a complete history even on goals where the dashboard wasn't opened.
+  if (goals.length > 0) {
+    await Promise.all(
+      goals
+        .filter((g) => g.status === "active")
+        .map((g) => bootstrapDailyEntries(supabase, g.id))
+    );
+  }
 
   // Fetch entries for all goals in parallel
   const entriesByGoal: Record<string, DailyEntry[]> = {};

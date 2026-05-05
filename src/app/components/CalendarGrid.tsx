@@ -105,9 +105,9 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
   const cells = buildCalendarGrid(startDate, entries, timezone);
 
   return (
-    <section className="min-w-0 bg-white rounded-2xl p-3 md:p-5 h-full">
-      {/* Day headers */}
-      <div className="grid grid-cols-7 gap-3 mb-2 px-1">
+    <section className="min-w-0 bg-white rounded-2xl h-full flex flex-col">
+      {/* Day headers — fixed at top of card */}
+      <div className="grid grid-cols-7 gap-3 px-4 md:px-6 pt-3 md:pt-5 pb-2">
         {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day) => (
           <div
             key={day}
@@ -122,8 +122,9 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-3">
+      {/* Calendar grid — scrolls vertically when calendar grows tall */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-5 pb-3 md:pb-5">
+        <div className="grid grid-cols-7 gap-3">
         {cells.map((cell) => {
           const entry = cell.entry;
           const isSuccess = entry?.status === "success";
@@ -203,6 +204,7 @@ export default function CalendarGrid({ startDate, entries, timezone }: CalendarG
             </div>
           );
         })}
+        </div>
       </div>
     </section>
   );
