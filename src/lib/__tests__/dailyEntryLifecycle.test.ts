@@ -249,6 +249,125 @@ describe("team completion evaluation", () => {
   });
 });
 
+// ── Behavior: Bootstrap back-fills missed days ──
+
+describe("bootstrap back-fills past active days", () => {
+  it("inserts a 'miss' entry for every past active day with no entry", async () => {
+    // GIVEN: a goal that started 5 days ago, every day is active, and only
+    // one of those past days has an entry (a manual success). The other
+    // four past active days have no entry — as if the app was never opened.
+    const today = new Date().toLocaleDateString("en-CA", {
+      timeZone: "America/Los_Angeles",
+    });
+    const [ty, tm, td] = today.split("-").map(Number);
+
+    function dateOffset(days: number): string {
+      const d = new Date(ty, tm - 1, td + days);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${dd}`;
+    }
+
+    const fiveDaysAgo = dateOffset(-5);
+    const threeDaysAgo = dateOffset(-3);
+
+    const db = createMockSupabase({
+      goals: [
+        {
+          id: GOAL_ID,
+          active_days: [0, 1, 2, 3, 4, 5, 6],
+          deadline_time: "08:00:00",
+          start_date: fiveDaysAgo,
+          timezone: "America/Los_Angeles",
+        },
+      ],
+      daily_entries: [
+        // Only one past day has an entry (manually marked success)
+        entry({
+          id: "manual-success",
+          date: threeDaysAgo,
+          status: "success",
+          updated_by: "admin",
+        }),
+      ],
+    });
+
+    // WHEN: bootstrap runs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await bootstrapDailyEntries(db as any, GOAL_ID);
+
+    // THEN: every day from start through today has an entry
+    const entries = db.getRows("daily_entries");
+    const dates = new Set(entries.map((e) => e.date));
+    for (let i = -5; i <= 0; i++) {
+      expect(dates.has(dateOffset(i))).toBe(true);
+    }
+
+    // AND: the previously empty past days are "miss"
+    const missDates = entries
+      .filter((e) => e.status === "miss")
+      .map((e) => e.date)
+      .sort();
+    expect(missDates).toContain(dateOffset(-5));
+    expect(missDates).toContain(dateOffset(-4));
+    expect(missDates).toContain(dateOffset(-2));
+    expect(missDates).toContain(dateOffset(-1));
+
+    // AND: the admin's manual success is preserved
+    const preserved = entries.find((e) => e.id === "manual-success");
+    expect(preserved?.status).toBe("success");
+    expect(preserved?.updated_by).toBe("admin");
+  });
+
+  it("skips inactive weekdays when back-filling", async () => {
+    // GIVEN: a weekdays-only goal that started 9 days ago — weekend days
+    // in that range should NOT get back-fill entries
+    const today = new Date().toLocaleDateString("en-CA", {
+      timeZone: "America/Los_Angeles",
+    });
+    const [ty, tm, td] = today.split("-").map(Number);
+
+    function dateAt(offset: number): { date: string; dow: number } {
+      const d = new Date(ty, tm - 1, td + offset);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return { date: `${y}-${m}-${dd}`, dow: d.getDay() };
+    }
+
+    const startDate = dateAt(-9).date;
+
+    const db = createMockSupabase({
+      goals: [
+        {
+          id: GOAL_ID,
+          active_days: [1, 2, 3, 4, 5], // Mon-Fri only
+          deadline_time: "08:00:00",
+          start_date: startDate,
+          timezone: "America/Los_Angeles",
+        },
+      ],
+      daily_entries: [],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await bootstrapDailyEntries(db as any, GOAL_ID);
+
+    // THEN: no entries exist for weekend dates in the range
+    const entries = db.getRows("daily_entries");
+    for (let i = -9; i <= 0; i++) {
+      const { date, dow } = dateAt(i);
+      const entry = entries.find((e) => e.date === date);
+      if (dow === 0 || dow === 6) {
+        expect(entry).toBeUndefined();
+      } else {
+        expect(entry).toBeDefined();
+      }
+    }
+  });
+});
+
 // ── Behavior: Skip day ──
 
 describe("skip day", () => {
